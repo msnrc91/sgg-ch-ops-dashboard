@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Switzerland Ops Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Segoe UI,Arial,sans-serif;color:#1a1a1a;background:#f5f5f3;padding:20px;max-width:960px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:12px}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.nav button{padding:5px 12px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;font-family:inherit}
+.nav button:hover{background:#e8e8e6}
+.nav .date{font-size:16px;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat{background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e5e3}
+.stat .l{font-size:12px;color:#888}
+.stat .v{font-size:22px;font-weight:600;margin-top:2px}
+.stat .v.red{color:#A32D2D}
+.stat .v.amber{color:#BA7517}
+.sec{font-size:14px;font-weight:600;color:#444;padding:12px 0 6px;border-bottom:1px solid #ddd;margin-top:16px}
+.sec:first-of-type{margin-top:0}
+.tk{padding:10px 12px;border-radius:6px;border-left:3px solid #ccc;margin-top:5px;background:#fff;display:flex;gap:8px;align-items:flex-start;transition:opacity .2s;position:relative}
+.tk.done{opacity:.4}
+.tk.done .title .t-text{text-decoration:line-through;color:#999}
+.tk .check{width:18px;height:18px;border-radius:4px;border:1.5px solid #bbb;cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;background:#fff;transition:all .15s}
+.tk .check:hover{border-color:#185FA5}
+.tk .check.checked{background:#185FA5;border-color:#185FA5}
+.tk .check.checked::after{content:'';display:block;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.tk .main{flex:1;min-width:0}
+.tk .title{font-size:14px;font-weight:600;line-height:1.35;color:#1a1a1a;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:2px}
+.tk .due-line{font-size:11px;color:#185FA5;font-weight:500;margin-top:2px}
+.tk .due-line .days{font-weight:400;color:#888}
+.tk .overdue-line{font-size:11px;color:#A32D2D;font-weight:500;margin-top:2px}
+.tk .system{font-size:10px;color:#bbb;margin-top:2px}
+.tk .prep{font-size:10px;color:#bbb;margin-top:2px}
+.tk .right{display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;padding-top:1px;min-width:44px}
+.tk .note-icon{width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px solid #bbb;display:flex;align-items:center;justify-content:center;cursor:default;position:relative;font-size:14px;font-weight:700;color:#777;font-style:italic;font-family:Georgia,serif;line-height:1}
+.tk .note-icon:hover{border-color:#185FA5;color:#185FA5;background:#eef5fc}
+.tk .note-icon:hover .tooltip{display:block}
+.tk .badges{display:flex;flex-direction:column;gap:3px;align-items:center}
+.tooltip{display:none;position:absolute;right:34px;top:-4px;width:260px;background:#333;color:#fff;font-size:11px;line-height:1.4;padding:8px 10px;border-radius:6px;z-index:10;font-weight:400;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.tooltip::after{content:'';position:absolute;right:-6px;top:12px;border:6px solid transparent;border-left-color:#333}
+.tooltip b{color:#7CB3F0;font-weight:600;display:block;margin-bottom:2px}
+.hard{display:block;font-size:9px;font-weight:700;color:#fff;background:#A32D2D;padding:2px 6px;border-radius:3px;letter-spacing:0.3px;text-align:center}
+.prep-badge{display:block;font-size:9px;font-weight:700;color:#fff;background:#BA7517;padding:2px 6px;border-radius:3px;letter-spacing:0.3px;text-align:center}
+.overdue-badge{display:block;font-size:9px;font-weight:700;color:#fff;background:#A32D2D;padding:2px 6px;border-radius:3px;letter-spacing:0.3px;text-align:center}
+.progress{height:4px;background:#e5e5e3;border-radius:2px;margin-bottom:14px;overflow:hidden}
+.progress .bar{height:100%;background:#185FA5;border-radius:2px;transition:width .3s}
+.progress-label{font-size:12px;color:#888;margin-bottom:4px;display:flex;justify-content:space-between}
+.reset-btn{font-size:11px;color:#A32D2D;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.reset-btn:hover{text-decoration:underline}
+.legal{border-left-color:#BA7517;background:#faf5ea}
+.payroll{border-left-color:#185FA5;background:#eef5fc}
+.invoicing{border-left-color:#0F6E56;background:#eaf7f1}
+.lifecycle{border-left-color:#534AB7;background:#f0effe}
+.governance{border-left-color:#5F5E5A;background:#f3f2ee}
+.week-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+.wday{border:1px solid #e5e5e3;border-radius:8px;padding:8px;cursor:pointer;background:#fff;min-height:90px}
+.wday:hover{border-color:#aaa}
+.wday.today{border:2px solid #185FA5;background:#eef5fc}
+.wday .dname{font-size:12px;font-weight:600;margin-bottom:4px}
+.wday .mini{font-size:10px;line-height:1.2;padding:2px 4px;margin-bottom:2px;border-radius:3px;border-left:2px solid #ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wday .mini.legal{border-left-color:#BA7517;background:#faf5ea}
+.wday .mini.payroll{border-left-color:#185FA5;background:#eef5fc}
+.wday .mini.invoicing{border-left-color:#0F6E56;background:#eaf7f1}
+.wday .mini.lifecycle{border-left-color:#534AB7;background:#f0effe}
+.wday .mini.governance{border-left-color:#5F5E5A;background:#f3f2ee}
+.wday .more{font-size:10px;color:#888}
+.wday .hards{font-size:9px;color:#A32D2D;font-weight:600;margin-top:3px}
+.tk.payroll-cal{border-left-width:5px;border-left-color:#A32D2D;background:#FCE4EC}
+.tk.payroll-cal .title{font-weight:600;color:#791F1F}
+.tk.payroll-cal-prep{border-left-color:#BA7517;background:#FFF9E6}
+.tk.payroll-cal-prep .title{font-weight:600;color:#854F0B}
+.tk.overdue{background:#FCE4EC;border-left-color:#A32D2D;border-left-width:5px}
+.tk.overdue .title{font-weight:600}
+.shifted-badge{font-size:9px;font-weight:600;color:#854F0B;background:#FAEEDA;padding:1px 5px;border-radius:3px;margin-left:4px}
+.horizon-hdr{font-size:14px;font-weight:600;color:#444;padding:14px 0 6px;border-bottom:1px solid #ddd;margin-top:18px;display:flex;justify-content:space-between;align-items:baseline}
+.horizon-hdr .count{font-size:11px;font-weight:400;color:#888}
+.horizon-empty{font-size:12px;color:#888;padding:8px 0;font-style:italic}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#888;margin-bottom:16px}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend .d{width:8px;height:8px;border-radius:2px}
+.footer{margin-top:24px;padding:12px;background:#fff;border-radius:8px;border:1px solid #e5e5e3;font-size:12px;color:#888}
+.pcal{margin-top:16px;background:#fff;border:1px solid #e5e5e3;border-radius:8px;padding:14px}
+.pcal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.pcal-hdr .ti{font-size:14px;font-weight:600}
+.pcal-hdr .src{font-size:11px;color:#888}
+.pcal-now{background:#FFF9E6;border:1px solid #BA7517;border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.pcal-now .lbl{font-size:11px;color:#854F0B;font-weight:600;margin-bottom:4px}
+.pcal-now .dates{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px}
+.pcal-now .dates div{background:#fff;padding:6px 8px;border-radius:4px;border:1px solid #FAC775}
+.pcal-now .dates b{color:#854F0B}
+.pcal-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.pcal-tbl th{text-align:left;padding:6px 8px;background:#f5f5f3;font-weight:600;border-bottom:1px solid #e5e5e3}
+.pcal-tbl td{padding:6px 8px;border-bottom:1px solid #f0f0ee}
+.pcal-tbl tr.current{background:#eef5fc}
+.pcal-tbl tr.current td:first-child{font-weight:600;color:#185FA5}
+.pcal-tbl input{width:90%;border:1px solid #ddd;border-radius:3px;padding:3px 5px;font-size:12px;font-family:inherit}
+.pcal-edit{font-size:11px;color:#185FA5;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.pcal-edit:hover{text-decoration:underline}
+.pcal-save{font-size:11px;color:#fff;background:#185FA5;border:none;cursor:pointer;font-family:inherit;padding:4px 10px;border-radius:4px;margin-top:8px}
+.weekend{font-size:13px;color:#888;padding:20px;background:#fff;border-radius:8px;text-align:center;border:1px solid #e5e5e3}
+
+.user-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#fff;border-radius:8px;border:1px solid #ddd;font-size:13px}
+.user-bar .name{font-weight:600;color:#185FA5}
+.user-bar button{font-size:11px;padding:3px 8px;border:1px solid #ddd;border-radius:4px;background:#f5f5f3;cursor:pointer;font-family:inherit}
+.user-bar button:hover{border-color:#185FA5;background:#eef5fc}
+.done-by{font-size:11px;color:#0F6E56;margin-bottom:2px}
+.assign-row{margin-bottom:3px}
+.assign-sel{font-size:11px;padding:2px 4px;border:1px solid #ddd;border-radius:4px;background:#f9f9f7;color:#444;font-family:inherit;cursor:pointer}
+.assign-sel:focus{border-color:#185FA5;outline:none}
+.team-modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.team-modal-bg.show{display:flex}
+.team-modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.team-modal h2{font-size:16px;margin-bottom:16px;font-weight:600}
+.conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.conn-dot.on{background:#0F6E56}
+.conn-dot.off{background:#A32D2D}
+.collapse-btn{font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:0;margin-left:8px;font-family:inherit}
+.freq-tag{font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle}
+.freq-tag.monthly{color:#185FA5;background:#D6E8FA}
+.freq-tag.bimonthly{color:#534AB7;background:#E8E4F8}
+.freq-tag.quarterly{color:#BA7517;background:#FAF0D6}
+.freq-tag.annual{color:#A32D2D;background:#FCE4EC}
+.freq-tag.monthly-list{color:#185FA5;background:#D6E8FA}
+.tk-actions{display:flex;gap:4px;margin-left:auto;flex-shrink:0;opacity:0;transition:opacity .15s}
+.tk:hover .tk-actions{opacity:1}
+.tk-btn{width:24px;height:24px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:#888;transition:all .15s}
+.tk-btn:hover{border-color:#185FA5;color:#185FA5;background:#eef5fc}
+.tk-btn.del:hover{border-color:#A32D2D;color:#A32D2D;background:#FCE4EC}
+.add-btn{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:#185FA5;color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:100;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.add-btn:hover{transform:scale(1.1)}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal h2{font-size:16px;margin-bottom:16px;font-weight:600}
+.modal label{font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:3px;margin-top:12px}
+.modal label:first-of-type{margin-top:0}
+.modal input,.modal select,.modal textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.modal textarea{resize:vertical;min-height:60px}
+.modal select{appearance:auto}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.modal-foot button{padding:8px 18px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer;border:1px solid #ddd}
+.modal-foot .save{background:#185FA5;color:#fff;border-color:#185FA5;font-weight:600}
+.modal-foot .cancel{background:#fff;color:#444}
+.modal-foot .danger{background:#FCE4EC;color:#A32D2D;border-color:#F09595}
+</style>
+</head>
+<body>
+
+<h1 style="display:flex;justify-content:space-between;align-items:center">Switzerland — daily ops dashboard <button id="langBtn" onclick="toggleLang()" style="font-size:12px;padding:4px 10px;border:1.5px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#185FA5">FR</button></h1>
+
+
+<div class="user-bar">
+<span><span class="conn-dot on" id="connDot"></span><span class="name" id="userName">(loading...)</span></span>
+<button onclick="promptUser()">Change name</button>
+<button onclick="openTeamModal()">Manage team</button>
+</div>
+<div class="legend">
+<span><span class="d" style="background:#BA7517"></span><span id="lgLegal">Legal</span></span>
+<span><span class="d" style="background:#185FA5"></span><span id="lgPayroll">Payroll</span></span>
+<span><span class="d" style="background:#0F6E56"></span><span id="lgInvoicing">Invoicing</span></span>
+<span><span class="d" style="background:#534AB7"></span><span id="lgLifecycle">Lifecycle</span></span>
+<span><span class="d" style="background:#5F5E5A"></span><span id="lgGovernance">Governance</span></span>
+</div>
+
+<div class="nav">
+<button id="navPrev" onclick="go(-1)">&#8249; Prev</button>
+<button id="navToday" onclick="goToday()">Today</button>
+<button id="navNext" onclick="go(1)">Next &#8250;</button>
+<span class="date" id="dateLabel"></span>
+</div>
+
+<div class="stats" style="grid-template-columns:repeat(4,1fr)">
+<div class="stat"><div class="l" id="slOverdue">Overdue</div><div class="v" id="sOverdue">0</div></div>
+<div class="stat"><div class="l" id="slToday">Today</div><div class="v" id="sToday">0</div></div>
+<div class="stat"><div class="l" id="slHard">Hard deadlines</div><div class="v" id="sHard">0</div></div>
+<div class="stat"><div class="l" id="slPrep">Next 7 days</div><div class="v" id="sPrep">0</div></div>
+</div>
+
+<div id="progressArea"></div>
+<div id="overdueSec"></div>
+<div id="todaySec"></div>
+<div id="horizon7Sec"></div>
+<div id="horizon30Sec"></div>
+<div id="horizon90Sec"></div>
+
+<div class="sec" id="weekHdr">This week</div>
+<div class="week-strip" id="weekStrip"></div>
+
+<div class="sec" id="pcalHdr">Payroll calendar <span style="font-size:11px;font-weight:400;color:#888;margin-left:8px">From Enovetic EasyTemp → Switzerland clients → Innovative</span></div>
+<div class="pcal">
+<div class="pcal-hdr">
+<div class="ti" id="pcalTi">Current month</div>
+</div>
+<div class="pcal-now" id="pcalNow"></div>
+<table class="pcal-tbl" id="pcalTbl"></table>
+</div>
+
+<div class="sec" id="monthlyHdr">Monthly deadlines <button class="collapse-btn" id="monthlyBtn" onclick="toggle('monthly')">[hide]</button></div>
+<div id="monthlySec"></div>
+
+<div class="sec" id="quarterlyHdr">Quarterly tasks <button class="collapse-btn" id="quarterlyBtn" onclick="toggle('quarterly')">[hide]</button></div>
+<div id="quarterlySec"></div>
+
+<div class="sec" id="annualHdr">Annual deadlines <button class="collapse-btn" id="annualBtn" onclick="toggle('annual')">[hide]</button></div>
+<div id="annualSec"></div>
+
+
+<div class="team-modal-bg" id="teamModal">
+<div class="team-modal">
+<h2>Team members</h2>
+<div id="teamContent"></div>
+<div style="margin-top:16px;text-align:right"><button onclick="closeTeamModal()" style="padding:6px 14px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-family:inherit">Close</button></div>
+</div>
+</div>
+
+<button class="add-btn" onclick="openAddTask()" title="Add task">+</button>
+
+<div class="modal-bg" id="taskModal">
+<div class="modal">
+<h2 id="modalTitle">Add task</h2>
+<label data-l="fTask">Task name</label>
+<input id="fTask" placeholder="e.g. Download monthly AVS report">
+<div class="modal-row">
+<div><label data-l="fFreq">Frequency</label>
+<select id="fFreq" onchange="freqChanged()">
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="bimonthly">2x / month</option>
+<option value="monthly" selected>Monthly</option>
+<option value="quarterly">Quarterly</option>
+<option value="annual">Annual</option>
+</select></div>
+<div><label data-l="fLayer">Layer</label>
+<select id="fLayer">
+<option value="legal">Legal</option>
+<option value="payroll">Payroll</option>
+<option value="invoicing">Invoicing</option>
+<option value="lifecycle">Lifecycle</option>
+<option value="governance">Governance</option>
+</select></div>
+</div>
+<div class="modal-row">
+<div id="fDayWrap"><label data-l="fDayLabel">Day of week (weekly)</label>
+<select id="fDay">
+<option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+</select></div>
+<div id="fMdWrap"><label data-l="fMdLabel">Day of month</label>
+<input id="fMd" type="number" min="1" max="28" value="15"></div>
+<div id="fAmWrap"><label data-l="fAmLabel">Month</label>
+<select id="fAm"><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select></div>
+<div id="fAdWrap"><label data-l="fAdLabel">Day</label>
+<input id="fAd" type="number" min="1" max="31" value="15"></div>
+</div>
+<div class="modal-row">
+<div><label data-l="fHardLabel">Hard deadline?</label>
+<select id="fHard"><option value="0">No</option><option value="1">Yes</option></select></div>
+<div><label data-l="fWhenLabel">When / time</label>
+<input id="fWhen" placeholder="e.g. Before 20th, 12:00"></div>
+</div>
+<label data-l="fSystemLabel">Tool / system</label>
+<input id="fSystem" placeholder="e.g. Easytemp + Email">
+<label data-l="fPrepLabel">Prep instruction (optional)</label>
+<textarea id="fPrep" placeholder="e.g. 2 weeks before: gather compliance data"></textarea>
+<label data-l="fNoteLabel">Note (optional)</label>
+<textarea id="fNote" placeholder="e.g. SOP reference, edge cases, risks"></textarea>
+<div class="modal-foot">
+<button class="danger" id="modalDel" onclick="deleteEditingTask()" style="display:none" data-l="fDelBtn">Delete</button>
+<span style="flex:1"></span>
+<button class="cancel" onclick="closeModal()" data-l="fCancelBtn">Cancel</button>
+<button class="save" onclick="saveTask()" data-l="fSaveBtn">Save</button>
+</div>
+</div>
+</div>
+
+<div class="footer" id="footerTxt">
+Switzerland ops dashboard — data from Irina Rachieru questionnaire, March 2026. Navigate with arrows. HARD = government penalty or payroll failure if missed. Save this file to your desktop and open in Edge or Chrome.
+</div>
+<div style="text-align:right;margin-top:6px"><a href="#" id="restoreLink" onclick="restoreAll();return false" style="font-size:11px;color:#A32D2D;display:none">Restore deleted tasks</a></div>
+
+<script>
+var TASKS=[
+// ═══ WEEKLY — MONDAY ═══
+{id:"w1",task:"Chase late timesheets",when:"Mon 10:00-11:00",day:1,layer:"payroll",hard:1,system:"Email / Easymission",freq:"weekly",scope:"Electro Materiel (weekly reminder)"},
+{id:"w2",task:"Collect weekly timesheets from workers",when:"Mon by 10:00",day:1,layer:"payroll",hard:1,system:"Easymission + Email",freq:"weekly"},
+{id:"w3",task:"LHC timesheets processing + consolidation to Sales Manager",when:"Mon by 13:00",day:1,layer:"payroll",hard:1,system:"Easytemp + EasyMission",freq:"weekly",note:"SOP E: process PDF timesheets to Excel, create Liste de missions, send to Michael B. for consolidation. 4-eyes check on names vs missions."},
+{id:"w5",task:"Emails sorting + task creation",when:"Mon morning",day:1,layer:"governance",hard:0,system:"Email (Outlook)",freq:"weekly",note:"SOP H: filter by No category, assign name tags, add red flags, categorise. Repeat at least twice daily."},
+// ═══ WEEKLY — TUESDAY ═══
+{id:"w6",task:"Client approval of weekly timesheets",when:"Tue by 10:00",day:2,layer:"payroll",hard:1,prep:"Mon: ensure all timesheets were sent to clients for sign-off",system:"Email",freq:"weekly"},
+{id:"w7",task:"Post upload + sorting (Tue batch)",when:"Tue",day:2,layer:"governance",hard:0,system:"OneDrive + POST tracking file (Excel)",freq:"weekly",note:"SOP H: sort ZH office scans into SL OPS / Non-SL folders, log in POST tracking file."},
+{id:"w6b",task:"LHC consolidation corrections + client approval",when:"Tue evening",day:2,layer:"payroll",hard:0,system:"EasyMission + Email",freq:"weekly",note:"SOP E: implement client corrections, upload CSV to EasyMission, 4-eyes check with Sales Manager."},
+{id:"w6c",task:"Resolve tax configuration issues from Enovetic",when:"Tue (upon notification)",day:2,layer:"legal",hard:0,system:"Easytemp",freq:"weekly",note:"SOP E: check Enovetic Inconsistency emails, correct in Impot a la source, inform Enovetic."},
+// ═══ WEEKLY — WEDNESDAY ═══
+{id:"w9",task:"Review draft payslips (controlled clients)",when:"Wed by 16:00",day:3,layer:"payroll",hard:1,system:"Easytemp",freq:"weekly",scope:"NTT Data, Marvelous Digital, LHC, Ben's Bus, Electro Materiel, EHL"},
+{id:"w10",task:"Correct payroll errors",when:"Wed same day",day:3,layer:"payroll",hard:1,system:"Easytemp",freq:"weekly"},
+{id:"w12",task:"Generate + send weekly client invoices",when:"Wed",day:3,layer:"invoicing",hard:0,system:"Easytemp",freq:"weekly"},
+{id:"w13",task:"Work permit weekly audit",when:"Wed",day:3,layer:"legal",hard:1,system:"Easygov + Work Permits Management (Excel) + Work Permits Audit file (Excel)",freq:"weekly",note:"SOP C: download Controle Mission + Controle permis de travail from Easytemp, update Management file, refresh audit pivots, flag red actions, check IMES tab."},
+// ═══ WEEKLY — THURSDAY ═══
+{id:"w14",task:"Salary payment",when:"Thu (next WD after closure)",day:4,layer:"payroll",hard:0,system:"Bank / Finance",freq:"weekly",note:"Workers informed salary by Friday. Art. 23 CBA: by 5th of M+1."},
+{id:"w15",task:"Upload invoices to Finance",when:"Thu",day:4,layer:"invoicing",hard:0,system:"Easytemp + OneDrive (Finance reporting > Invoices via EasyTemp)",freq:"weekly"},
+{id:"w15b",task:"Update clients list for Finance",when:"Thu",day:4,layer:"invoicing",hard:0,system:"SG CH clients via EasyTemp (Excel)",freq:"weekly",note:"SOP E: keep client list current for Accounting to complete invoicing list after month closure."},
+{id:"w15c",task:"Contracts Management list update",when:"Thu",day:4,layer:"lifecycle",hard:0,system:"JOINERS checklist (Contracts Management tab) + Easytemp",freq:"weekly",note:"SOP H: download Controle mission, identify new missions, add to list, update signed status."},
+// ═══ WEEKLY — FRIDAY ═══
+{id:"w16",task:"IMES status check",when:"Fri",day:5,layer:"legal",hard:1,system:"Easygov",freq:"weekly"},
+{id:"w17",task:"Post sorting + archiving (Fri batch)",when:"Fri",day:5,layer:"governance",hard:0,system:"ePost/KLARA + OneDrive + POST tracking file (Excel)",freq:"weekly",note:"SOP H: download from ePost/KLARA, apply SL OPS tag, check tax letters vs DPI numbers, sort ZH office scans, log all in POST tracking file."},
+{id:"w18",task:"Contracts sorting",when:"Fri",day:5,layer:"lifecycle",hard:0,system:"Easytemp / OneDrive",freq:"weekly"},
+{id:"w19",task:"Employee documents upload + sorting (full SOP)",when:"Fri",day:5,layer:"lifecycle",hard:0,system:"Easytemp + OneDrive + JOINERS checklist (Excel)",freq:"weekly",note:"SOP B: not just saving files \u2014 full process: identify employee in Easytemp, add to Joiners list, create OneDrive folder, rename + save docs, upload to Easytemp, update personal data (IBAN, AVS, tax config, family status), inform Enovetic if French bank account, complete general checklist, reply to sender acknowledging receipt. Block 2h on Friday. Team splits if volume is high."},
+{id:"w20",task:"Offboarding docs (AGB + Certificat de travail)",when:"Fri",day:5,layer:"lifecycle",hard:1,system:"Easytemp + PDF editor",freq:"weekly",note:"SOP F: within 1 week. Download pre-filled form, edit, sign, apply scan effect, send with payslips."},
+// ═══ TWICE A MONTH ═══
+{id:"b1",task:"SUVA accident claims follow-up",when:"2x / month",day:0,layer:"lifecycle",hard:0,system:"mySUVA + SUVA allowances tracker (Excel)",freq:"bimonthly",note:"SOP D: monitor claim status, check decisions, update tracker, verify compensation in payslips."},
+{id:"b2",task:"Groupe Mutuel sickness claims follow-up",when:"2x / month",day:0,layer:"lifecycle",hard:0,system:"Groupe Mutuel platform + GM sickness allowances tracker (Excel)",freq:"bimonthly",note:"SOP D: monitor claims, check decisions/requests, update tracker, verify allowance in payslips."},
+{id:"b3",task:"Consimo family allowances claims follow-up",when:"2x / month",day:0,layer:"lifecycle",hard:0,system:"Consimo portal + Family allowance tracker (Excel)",freq:"bimonthly",note:"SOP B: check new decisions, update tracker, inform Enovetic, reconcile monthly payments."},
+{id:"b4",task:"Signed contracts sorting + archiving",when:"Thu (every 2 weeks)",day:4,layer:"lifecycle",hard:0,system:"Easytemp + OneDrive + Contracts Management tab (JOINERS checklist)",freq:"bimonthly",note:"From meeting 7 May: download signed contracts from inbox folder, save to employee folder in OneDrive + Easytemp, mark contract as signed in Contracts Management tracker. Don\u2019t accumulate \u2014 gets tedious in bulk. Irina recommends bimonthly to keep volume manageable."},
+// ═══ MONTHLY — PAYROLL CHAIN (list-only, real dates via payroll calendar) ═══
+{id:"m1",task:"Monthly timesheet collection",when:"1st BD of M+1",day:0,layer:"payroll",hard:1,prep:"Last week of month: remind clients monthly timesheets due on 1st BD",system:"Easymission + Email",freq:"monthly-list",md:1},
+{id:"m2",task:"Client approval monthly timesheets",when:"2nd BD of M+1",day:0,layer:"payroll",hard:1,system:"Email",freq:"monthly-list",md:2},
+{id:"m3",task:"Submit monthly payroll to Enovetic",when:"Per payroll calendar, 12:00",day:0,layer:"payroll",hard:1,prep:"Ensure all monthly approvals received before closure date",system:"Easytemp + Easymission",freq:"monthly-list",md:3},
+{id:"m4",task:"Monthly salary payment",when:"Next WD after closure",day:0,layer:"payroll",hard:0,system:"Bank",freq:"monthly-list",md:5},
+{id:"m7",task:"Monthly client invoices (check + approve)",when:"Monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly-list",md:3},
+{id:"m8",task:"Payroll reports to Finance",when:"On monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly-list",md:5},
+{id:"m10",task:"Month-end close",when:"By 5th of M+1",day:0,layer:"invoicing",hard:1,system:"Easytemp",freq:"monthly-list",md:5},
+// ═══ MONTHLY — FIRING ON ACTUAL DATES ═══
+{id:"m11",task:"Contract expiry review + closure",when:"Around 20th",day:0,layer:"lifecycle",hard:0,system:"Easytemp",freq:"bimonthly",prep:"Mid-month: pull list of contracts expiring next 2 weeks"},
+{id:"m12",task:"Worker document audit (Joiners checklist)",when:"Around 15th",day:0,layer:"lifecycle",hard:0,system:"JOINERS checklist (Excel)",freq:"monthly",md:15,note:"Proactive check of employee records for clean payroll. Review for missing IBAN (no salary), missing AVS number (no pension fund), or missing tax configuration (tax corrections). Chase the data before payroll runs.",prep:"Pull the Joiners checklist and flag any incomplete records. Contact workers/recruiters to fill gaps."},
+{id:"m13",task:"Missing AVS numbers follow-up",when:"By 7th",day:0,layer:"payroll",hard:1,system:"Easytemp + Consimo portal",freq:"monthly",md:7,note:"SOP E: verify Enovetic missing AVS list. Contact employees, check with Consimo, request new AVS cards if needed. Resolve by 10th.",prep:"Day after monthly closure: check Enovetic missing AVS list alongside payroll reports."},
+{id:"m14",task:"Missing IBAN follow-up",when:"2 days after closure",day:0,layer:"payroll",hard:1,system:"Easytemp + Email",freq:"monthly",md:7,note:"SOP E: contact employees with missing IBAN. If urgent, request separate payment file (DTA) from Enovetic. Otherwise next weekly cycle."},
+{id:"m16",task:"Complete cantonal tax invoice templates + send to Accounting",when:"By 25th",day:0,layer:"legal",hard:1,system:"PDF editor + SG CH Taxes reconciliation file (Excel)",freq:"monthly",md:25,note:"SOP E: fill invoice amount from reconciliation. Check correct DPI number (SL vs Deel). Send to Tatiana for payment by 31st.",prep:"By 20th: reconciliation file must be complete."},
+{id:"m18",task:"Send monthly timesheet reminders to clients + workers",when:"27th",day:0,layer:"payroll",hard:0,system:"Email",freq:"monthly",md:27,note:"SOP E: remind monthly-paid clients and weekly-paid clients about monthly closure.",scope:"NTT Data, Ben's Bus, Marvelous Digital, EPFL"},
+{id:"m19",task:"Download family allowance statement from Consimo",when:"28th",day:0,layer:"lifecycle",hard:0,system:"Consimo portal + Family allowance tracker (Excel)",freq:"monthly",md:28,note:"SOP E: download PDF + Excel. Highlight SL employees in blue. Send to Enovetic."},
+{id:"m20",task:"Monthly payroll reports \u2014 download, convert, upload for Accounting",when:"1 day after closure",day:0,layer:"invoicing",hard:0,system:"Easytemp + OneDrive",freq:"monthly-list",md:6,note:"SOP E: 6 reports from Enovetic. Convert .txt to .xlsx. Upload for Tatiana Gulica. Deadline: by 5th."},
+{id:"m21",task:"Generate + send AGI certificates to eligible employees",when:"1 day after closure",day:0,layer:"lifecycle",hard:0,system:"Easytemp + PDF editor",freq:"monthly-list",md:6,note:"SOP E/F: download pre-filled AGI, edit, sign, apply scan effect, send with payslips."},
+{id:"m23",task:"NTT Data monthly contract expiry check + client notification",when:"Around 22nd",day:0,layer:"lifecycle",hard:0,system:"NTT Data Contracts Management (Excel) + Staff-Leasing payroll input file (Excel)",freq:"monthly",md:22,note:"SOP C: evaluate end dates, notify client, collect extension decisions.",scope:"NTT Data"},
+{id:"m24",task:"NTT Data discount reconciliation (offset tracker)",when:"Around 22nd",day:0,layer:"invoicing",hard:0,system:"NTT Data Tracker offset amount (Excel)",freq:"monthly",md:22,note:"SOP E: add new joiner data + monthly days. Check total offset vs remaining.",scope:"NTT Data"},
+{id:"m25",task:"Monthly KPI / statistics report to Manager",when:"After monthly closure",day:0,layer:"governance",hard:0,system:"Easytemp + Excel + Email",freq:"monthly",md:8,note:"SOP E: download \u00c9valuation d\u2019exploitation from EasyTemp, convert to Excel, send to Matilde. Includes revenue stats per client, headcount, and margin data."},
+{id:"m26",task:"Complete payroll input file \u2014 clients managed by V\u00e2nia",when:"By 25th",day:0,layer:"payroll",hard:0,system:"Staff-Leasing payroll input file (Excel)",freq:"monthly",md:25,note:"Ensure payroll input file is fully updated for all clients managed by V\u00e2nia. Enables backup coverage during absence and accurate monthly payroll processing."},
+{id:"m27",task:"Complete payroll input file \u2014 clients managed by Svetlana",when:"By 25th",day:0,layer:"payroll",hard:0,system:"Staff-Leasing payroll input file (Excel)",freq:"monthly",md:25,note:"Ensure payroll input file is fully updated for all clients managed by Svetlana. Enables backup coverage during absence and accurate monthly payroll processing."},
+// ═══ QUARTERLY ═══ (none currently — use + button to add)
+// ═══ ANNUAL ═══
+{id:"a1b",task:"Year-end payroll reports \u2014 request from Enovetic",when:"By 7 January",day:0,layer:"legal",hard:1,system:"Email + Easytemp",freq:"annual",am:1,ad:7,note:"SOP G: remind Enovetic NOT to submit declarations to authorities \u2014 Deel handles consolidation. Expect 4+ reports by 10 Jan."},
+{id:"a1",task:"AVS annual declaration \u2014 register employees on Consimo, upload to Deel",when:"By 15 January",day:0,layer:"legal",hard:1,prep:"By 10 Jan: verify ALL active employees registered with Consimo (bulk templates). Complete deregistrations.",system:"Consimo portal > Global Unity from Deel",freq:"annual",am:1,ad:15,note:"SOP G: verify AVS registrations match Enovetic report. Upload zip to Deel. Inform Deel. Respond to follow-ups by 31 Jan."},
+{id:"a2",task:"Collect new insurance rates from all providers",when:"Early January",day:0,layer:"legal",hard:1,prep:"Dec: request rate confirmations from SUVA, GM, Consimo. Save in OneDrive > Payroll > Salary Calculations.",system:"All insurers",freq:"annual",am:1,ad:5,note:"SOP C: rates needed for salary simulation templates."},
+{id:"a2b",task:"Update salary simulation template with new payroll rates",when:"By 10 January",day:0,layer:"payroll",hard:1,system:"Excel (Salary Simulation SL DAILY Rate template)",freq:"annual",am:1,ad:10,note:"SOP C: update rates + pension fund age calculation reference year. Save to OneDrive Templates folder."},
+{id:"a3",task:"CBA / cantonal minimum salary update",when:"Start of year",day:0,layer:"legal",hard:1,system:"CBA publications",freq:"annual",am:1,ad:10},
+{id:"a3b",task:"SECO statistical report \u2014 align teams + collect data",when:"By 15 January",day:0,layer:"legal",hard:1,system:"Easygov + Excel (SG CH_STATISTICAL DATA)",freq:"annual",am:1,ad:15,note:"SOP G: coordinate with GEO, request data from Enovetic + Michael B. (direct hires), consolidate.",prep:"Request data from Enovetic + Sales Manager. Share template with GEO."},
+{id:"a3c",task:"SECO statistical report \u2014 submit on Easygov",when:"By 31 January",day:0,layer:"legal",hard:1,system:"Easygov",freq:"annual",am:1,ad:31},
+{id:"a4",task:"Annual tax certificates to workers",when:"By end of February",day:0,layer:"legal",hard:1,system:"Easytemp (Enovetic prepares)",freq:"annual",am:2,ad:28},
+{id:"a5",task:"NTT Data annual contract extensions \u2014 bill rates + service orders",when:"December",day:0,layer:"lifecycle",hard:1,system:"NTT Data Contracts Management (Excel) + Salary Simulation template",freq:"annual",am:12,ad:10,note:"SOP C: ask client which contracts to extend. Update payroll rates. Generate simulations. Check age 50 (vacation 10.6%) and pension fund age groups. Share bill rate analysis.",prep:"Oct/Nov: collect new insurance rates. By Dec 15: bill rate calculations ready for client."},
+{id:"a6",task:"AVG staffing licence renewal",when:"Anniversary date",day:0,layer:"legal",hard:1,prep:"3 months before: verify all licence conditions met",system:"Easygov",freq:"annual",am:12,ad:1},
+{id:"a7",task:"Insurance renewals (SUVA, liability, GM)",when:"Year-end",day:0,layer:"legal",hard:1,system:"All insurers",freq:"annual",am:12,ad:15},
+{id:"a8",task:"Insurance premium reconciliation",when:"Year-end",day:0,layer:"legal",hard:1,system:"All providers",freq:"annual",am:12,ad:20},
+{id:"a9",task:"Contract template review",when:"Annually",day:0,layer:"governance",hard:0,system:"Easytemp",freq:"annual",am:12,ad:31}
+];
+
+var PCAL_2026={
+  1: {weekly:[14,21,28], weeklyStr:"Wed 14, 21, 28", monthlyClose:"Tue 3 Feb"},
+  2: {weekly:[11,18,25], weeklyStr:"Wed 11, 18, 25", monthlyClose:"Tue 3 Mar"},
+  3: {weekly:[11,18,25], weeklyStr:"Wed 11, 18, 25", monthlyClose:"Thu 2 Apr"},
+  4: {weekly:[8,15,22,29], weeklyStr:"Wed 8, 15, 22, 29", monthlyClose:"Tue 5 May"},
+  5: {weekly:[13,20,27], weeklyStr:"Wed 13, 20, 27", monthlyClose:"Wed 3 Jun"},
+  6: {weekly:[11,17,24], weeklyStr:"Thu 11, Wed 17, 24", monthlyClose:"Fri 3 Jul"},
+  7: {weekly:[8,15,22,29], weeklyStr:"Wed 8, 15, 22, 29", monthlyClose:"Tue 4 Aug"},
+  8: {weekly:[12,19,26], weeklyStr:"Wed 12, 19, 26", monthlyClose:"Wed 2 Sep"},
+  9: {weekly:[9,16,23,30], weeklyStr:"Wed 9, 16, 23, 30", monthlyClose:"Tue 6 Oct"},
+  10:{weekly:[14,21,28], weeklyStr:"Wed 14, 21, 28", monthlyClose:"Wed 4 Nov"},
+  11:{weekly:[11,18,25], weeklyStr:"Wed 11, 18, 25", monthlyClose:"Thu 3 Dec"},
+  12:{weekly:[9,16,23,30], weeklyStr:"Wed 9, 16, 23, 30", monthlyClose:"Wed 6 Jan 2027"},
+};
+
+var MONTH_NAMES_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONTH_NAMES_FR=['Janv.','F\u00e9vr.','Mars','Avr.','Mai','Juin','Juil.','Ao\u00fbt','Sept.','Oct.','Nov.','D\u00e9c.'];
+function MONTH_NAMES_F(i){return (lang==='fr'?MONTH_NAMES_FR:MONTH_NAMES_EN)[i]}
+var MONTH_NAMES=MONTH_NAMES_EN;
+
+
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE CONFIG + HELPERS
+// ═══════════════════════════════════════════════════════════════
+var FB="https://ch-ops-dashboard-default-rtdb.europe-west1.firebasedatabase.app";
+var fbCache={done:{},assignments:{},custom:[],hidden:[],edits:{},team:['Irina Rachieru','Svetlana Goronja','V\u00e2nia Silva','Matilde Carrola']};
+var fbReady=false;
+var currentUser=localStorage.getItem('ch_user')||'';
+
+function fbGet(path){
+  return fetch(FB+'/'+path+'.json').then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).catch(function(e){console.error('fbGet error:',path,e);return null})
+}
+function fbSet(path,data){
+  return fetch(FB+'/'+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).catch(function(e){console.error('fbSet error:',path,e)})
+}
+function fbDel(path){
+  return fetch(FB+'/'+path+'.json',{method:'DELETE'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+  }).catch(function(e){console.error('fbDel error:',path,e)})
+}
+
+// Safe dateKey for Firebase (no dots or special chars)
+function fbDateKey(dk){return dk.replace(/\./g,'_')}
+
+// ═══════════════════════════════════════════════════════════════
+// USER IDENTITY
+// ═══════════════════════════════════════════════════════════════
+function promptUser(){
+  var name=prompt(lang==='fr'?'Entrez votre nom :':'Enter your name:',currentUser);
+  if(name&&name.trim()){currentUser=name.trim();localStorage.setItem('ch_user',currentUser);updateUserBar()}
+}
+function updateUserBar(){
+  var el=document.getElementById('userName');
+  if(el)el.textContent=currentUser||'(not set)';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+function openTeamModal(){
+  var h='<div style="margin-bottom:12px">';
+  for(var i=0;i<fbCache.team.length;i++){
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="flex:1">'+fbCache.team[i]+'</span><button class="tk-btn del" onclick="removeTeamMember('+i+')" style="opacity:1">&times;</button></div>';
+  }
+  h+='</div><div style="display:flex;gap:8px"><input id="newMember" placeholder="'+(lang==='fr'?'Nouveau membre':'New member')+'" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px"><button class="save" onclick="addTeamMember()" style="padding:6px 12px;border-radius:4px;background:#185FA5;color:#fff;border:none;cursor:pointer;font-size:13px">'+(lang==='fr'?'Ajouter':'Add')+'</button></div>';
+  document.getElementById('teamContent').innerHTML=h;
+  document.getElementById('teamModal').classList.add('show');
+}
+function closeTeamModal(){document.getElementById('teamModal').classList.remove('show')}
+function addTeamMember(){
+  var el=document.getElementById('newMember');var name=el.value.trim();
+  if(!name)return;
+  fbCache.team.push(name);
+  fbSet('team',fbCache.team);
+  openTeamModal();
+}
+function removeTeamMember(idx){
+  fbCache.team.splice(idx,1);
+  fbSet('team',fbCache.team);
+  openTeamModal();
+}
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// DONE STATE (Firebase-backed)
+// ═══════════════════════════════════════════════════════════════
+function isDone(taskId,pk){var dk=fbCache.done[fbDateKey(pk)];return dk&&dk[taskId]&&dk[taskId].v}
+function doneInfo(taskId,pk){var dk=fbCache.done[fbDateKey(pk)];return dk&&dk[taskId]?dk[taskId]:null}
+function setDone(taskId,pk,v){
+  var fk=fbDateKey(pk);
+  if(!fbCache.done[fk])fbCache.done[fk]={};
+  if(v){fbCache.done[fk][taskId]={v:true,by:currentUser,at:Date.now()};fbSet('done/'+fk+'/'+taskId,fbCache.done[fk][taskId])}
+  else{delete fbCache.done[fk][taskId];fbDel('done/'+fk+'/'+taskId)}
+}
+function toggleDoneP(taskId,pk){var v=!isDone(taskId,pk);setDone(taskId,pk,v);render()}
+function toggleDone(taskId){toggleDoneP(taskId,dateKey(sel))}
+function resetDay(){var fk=fbDateKey(dateKey(sel));fbCache.done[fk]={};fbSet('done/'+fk,null);render()}
+
+// ═══════════════════════════════════════════════════════════════
+// ASSIGNMENTS (Firebase-backed)
+// ═══════════════════════════════════════════════════════════════
+function getAssignment(taskId){return fbCache.assignments[taskId]||''}
+function setAssignment(taskId,person){
+  if(person){fbCache.assignments[taskId]=person;fbSet('assignments/'+taskId,person)}
+  else{delete fbCache.assignments[taskId];fbDel('assignments/'+taskId)}
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION + UTILS
+// ═══════════════════════════════════════════════════════════════
+var sel=new Date();
+(function(){var w=sel.getDay();if(w===6)sel=new Date(sel.getTime()+2*864e5);if(w===0)sel=new Date(sel.getTime()+1*864e5)})();
+var collapsed={monthly:true,quarterly:true,annual:true};
+
+function dateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function monthKey(d){return d.getFullYear()+'-M'+(d.getMonth()+1)}
+function quarterKey(d){return d.getFullYear()+'-Q'+Math.ceil((d.getMonth()+1)/3)}
+function yearKey(d){return d.getFullYear()+'-Y'}
+
+function go(n){sel=new Date(sel.getTime()+n*864e5);var w=sel.getDay();if(n>0&&w===6)sel=new Date(sel.getTime()+2*864e5);if(n>0&&w===0)sel=new Date(sel.getTime()+1*864e5);if(n<0&&w===0)sel=new Date(sel.getTime()-2*864e5);if(n<0&&w===6)sel=new Date(sel.getTime()-1*864e5);render()}
+function goToday(){sel=new Date();var w=sel.getDay();if(w===6)sel=new Date(sel.getTime()+2*864e5);if(w===0)sel=new Date(sel.getTime()+1*864e5);render()}
+function toggle(s){collapsed[s]=!collapsed[s];render()}
+
+function isWeekend(d){var w=d.getDay();return w===0||w===6}
+function shiftToFriday(d){var w=d.getDay();if(w===6)return new Date(d.getTime()-864e5);if(w===0)return new Date(d.getTime()-2*864e5);return d}
+function fmtD(d){var o={weekday:'short',day:'numeric',month:'short'};return d.toLocaleDateString(L('dateLang'),o)}
+function fmtFull(d){var o={weekday:'long',day:'numeric',month:'long',year:'numeric'};return d.toLocaleDateString(L('dateLang'),o)}
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function extractTime(when){if(!when)return '';var m=when.match(/\d{1,2}:\d{2}/g);if(!m)return '';return m.length>=2?m[0]+'\u2013'+m[1]:m[0]}
+
+function tasksForDate(d){
+  var wd=d.getDay(),dom=d.getDate(),mo=d.getMonth()+1,r=[];
+  for(var i=0;i<TASKS.length;i++){
+    var t=TASKS[i];
+    if(t.freq==="daily"&&wd>=1&&wd<=5)r.push(t);
+    if(t.freq==="weekly"&&t.day===wd&&wd>=1&&wd<=5)r.push(t);
+    if(t.freq==="bimonthly"){var biDates=[10,25];for(var bi=0;bi<biDates.length;bi++){var biOrig=new Date(d.getFullYear(),d.getMonth(),biDates[bi]);var biShift=isWeekend(biOrig)?shiftToFriday(biOrig):biOrig;if(sameDay(biShift,d)){r.push(t);break}}}
+    if(t.freq==="quarterly"&&[3,6,9,12].indexOf(mo)>=0){var qOrig=new Date(d.getFullYear(),d.getMonth(),25);var qShift=isWeekend(qOrig)?shiftToFriday(qOrig):qOrig;if(sameDay(qShift,d))r.push(t)}
+    if(t.freq==="annual"&&t.am&&t.ad){var aOrig=new Date(d.getFullYear(),t.am-1,t.ad);var aShift=isWeekend(aOrig)?shiftToFriday(aOrig):aOrig;if(sameDay(aShift,d))r.push(t)}
+    if(t.freq==="monthly"&&t.md){var origDate=new Date(d.getFullYear(),d.getMonth(),t.md);var shifted=isWeekend(origDate)?shiftToFriday(origDate):origDate;if(sameDay(shifted,d))r.push(t)}
+  }
+  // Monthly tax reconciliation reminder on first ePost day
+  if(wd===2||wd===5){
+    var feDay=0;for(var fd=1;fd<=7;fd++){var fdt=new Date(d.getFullYear(),d.getMonth(),fd);if(fdt.getDay()===2||fdt.getDay()===5){feDay=fd;break}}
+    if(dom===feDay){
+      r.push({id:"tax_recon_"+mo,task:"Tax reconciliation reminder \u2014 check cantonal invoices in today\u2019s post",when:"First ePost run of month",day:wd,layer:"legal",hard:0,system:"ePost/KLARA + SG CH Taxes reconciliation file (Excel)",freq:"monthly",
+        note:"When processing ePost today, check for cantonal tax invoices. If found: reconcile against ELM report from Enovetic (Swissdec). Match amounts per canton. Flag discrepancies. New canton = request new DPI number by 20th. This feeds m16 (tax invoice templates to Accounting by 25th)."});
+    }
+  }
+  // Payroll calendar events (2026 + Jan 2027)
+  if(d.getFullYear()===2026||(d.getFullYear()===2027&&d.getMonth()===0)){
+    if(d.getFullYear()===2026){
+      var pcal=PCAL_2026[mo];
+      if(pcal){
+        if(pcal.weekly.indexOf(dom)>=0&&!isWeekend(d)){
+          r.push({id:"pc_wk_"+mo+"_"+dom,task:"Weekly payroll closure (submit weekly payroll to Enovetic before deadline)",when:"Validate hours by 12:00, payment file by 16:00",day:wd,layer:"payroll",hard:1,system:"Enovetic / Easytemp",freq:"payroll-cal"});
+        }
+        var nextDay=new Date(d.getTime()+864e5);var nextDayDom=nextDay.getDate();var nextDayMo=nextDay.getMonth()+1;
+        if(nextDayMo===mo&&pcal.weekly.indexOf(nextDayDom)>=0){
+          r.push({id:"pc_wk_prep_"+mo+"_"+dom,task:"Tomorrow: weekly payroll closure \u2014 ensure all hours are validated",when:"Tomorrow 12:00",day:wd,layer:"payroll",hard:0,system:"Enovetic / Easytemp",freq:"payroll-cal-prep",prep:"Confirm all client approvals received today. Escalate if missing."});
+        }
+      }
+    }
+    var monthCloseMap={2:3,3:3,4:2,5:5,6:3,7:3,8:4,9:2,10:6,11:4,12:3,1:6};
+    var origMC=monthCloseMap[mo]?new Date(d.getFullYear(),d.getMonth(),monthCloseMap[mo]):null;
+    var shiftedMC=origMC&&isWeekend(origMC)?shiftToFriday(origMC):origMC;
+    if(shiftedMC&&sameDay(shiftedMC,d)){
+      var prevMo=mo===1?12:mo-1;
+      r.push({id:"pc_mc_"+mo+"_"+dom,task:"Monthly payroll closure \u2014 closes "+MONTH_NAMES[prevMo-1],when:"Submit by 12:00, review by 16:00",day:wd,layer:"payroll",hard:1,system:"Enovetic / Easytemp",freq:"payroll-cal"});
+    }
+    if(origMC){
+      var prepMC=new Date(origMC.getTime()-864e5);prepMC=isWeekend(prepMC)?shiftToFriday(prepMC):prepMC;
+      if(sameDay(prepMC,d)){
+        var prevMo2=mo===1?12:mo-1;
+        r.push({id:"pc_mc_prep_"+mo+"_"+dom,task:"Tomorrow: monthly payroll closure for "+MONTH_NAMES[prevMo2-1]+" \u2014 ensure all hours validated",when:"Tomorrow 12:00",day:wd,layer:"payroll",hard:0,system:"Enovetic / Easytemp",freq:"payroll-cal-prep",prep:"Confirm ALL monthly client approvals received today."});
+      }
+    }
+  }
+  return r;
+}
+
+function overdueForDate(d,lookBackDays){
+  var r=[];var seenIds={};
+  for(var i=lookBackDays;i>=1;i--){
+    var pastDate=new Date(d.getTime()-i*864e5);var pastTasks=tasksForDate(pastDate);
+    for(var j=0;j<pastTasks.length;j++){
+      var t=pastTasks[j];
+      if(t.freq==="payroll-cal-prep"||t.freq==="weekly"||t.freq==="daily"||t.freq==="bimonthly")continue;
+      if(isDone(t.id,dateKey(pastDate)))continue;
+      if(seenIds[t.id])continue;seenIds[t.id]=true;
+      r.push({t:t,originalDate:pastDate,daysOverdue:i});
+    }
+  }
+  return r;
+}
+
+function upcomingInWindow(fromDate,startDay,endDay){
+  var r=[];
+  for(var i=startDay;i<=endDay;i++){var fd=new Date(fromDate.getTime()+i*864e5);var ts=tasksForDate(fd);
+    for(var j=0;j<ts.length;j++){if(ts[j].freq==="daily")continue;r.push({t:ts[j],dueDate:fd,daysUntil:i})}}
+  return r;
+}
+
+function prepItems(d,days){
+  var r=[];for(var i=1;i<=days;i++){var fd=new Date(d.getTime()+i*864e5);var ts=tasksForDate(fd);
+    for(var j=0;j<ts.length;j++){if(ts[j].prep)r.push({t:ts[j],dueDate:fd,daysUntil:i})}}
+  return r;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CARD HTML (with assignment + done-by tracking)
+// ═══════════════════════════════════════════════════════════════
+function tkHTML(t,showPrep,dueInfo,showCheck,pk,overdueInfo){
+  var effectivePk=pk||dateKey(sel);
+  var checked=showCheck&&isDone(t.id,effectivePk);
+  var di=showCheck?doneInfo(t.id,effectivePk):null;
+  var overdueClass=overdueInfo?' overdue':'';
+  var h='<div class="tk '+t.layer+overdueClass+(checked?' done':'')+'">';
+  if(showCheck){
+    h+='<div class="check'+(checked?' checked':'')+'" onclick="event.stopPropagation();toggleDoneP(\''+t.id+"','"+effectivePk+'\')"></div>';
+  }
+  h+='<div class="main">';
+  // Title + freq tag + assignment + edit/delete
+  var fTag='';
+  var fMap={monthly:'Monthly',bimonthly:'2x/mo','monthly-list':'Monthly',quarterly:'Quarterly',annual:'Annual'};
+  var fMapFr={monthly:'Mensuel',bimonthly:'2x/mois','monthly-list':'Mensuel',quarterly:'Trimestriel',annual:'Annuel'};
+  if(fMap[t.freq]){var fLabel=lang==='fr'?fMapFr[t.freq]:fMap[t.freq];fTag='<span class="freq-tag '+(t.freq==='monthly-list'?'monthly':t.freq)+'">'+fLabel+'</span>';}
+  var editBtns='';
+  if(showCheck)editBtns='<span class="tk-actions"><button class="tk-btn" onclick="event.stopPropagation();openEditTask(\''+t.id+'\')" title="Edit">&#9998;</button><button class="tk-btn del" onclick="event.stopPropagation();confirmDelete(\''+t.id+'\')" title="Delete">&times;</button></span>';
+  h+='<div class="title"><span class="t-text">'+TR(t,'task')+'</span>'+fTag+editBtns+'</div>';
+
+  // Done-by line (who checked + when)
+  if(checked&&di&&di.by){
+    var ts=di.at?new Date(di.at):'';
+    var timeStr2=ts?(' \u00b7 '+ts.getHours()+':'+('0'+ts.getMinutes()).slice(-2)):'';
+    h+='<div class="done-by">\u2714 '+di.by+timeStr2+'</div>';
+  }
+
+  // Assignment dropdown
+  if(showCheck){
+    var assigned=getAssignment(t.id);
+    h+='<div class="assign-row"><select class="assign-sel" onchange="setAssignment(\''+t.id+'\',this.value)" onclick="event.stopPropagation()">';
+    h+='<option value="">'+(lang==='fr'?'Non assign\u00e9':'Unassigned')+'</option>';
+    for(var ti=0;ti<fbCache.team.length;ti++){
+      var mem=fbCache.team[ti];var short=mem.split(' ')[0];
+      h+='<option value="'+mem+'"'+(assigned===mem?' selected':'')+'>'+short+'</option>';
+    }
+    h+='</select></div>';
+  }
+
+  var timeStr=extractTime(t.when);
+  if(overdueInfo){
+    var odStr=L('wasdue')+fmtD(overdueInfo.originalDate);
+    if(timeStr)odStr+=' '+timeStr;
+    odStr+=' ('+overdueInfo.daysOverdue+(lang==='fr'?' j. de retard)':' day'+(overdueInfo.daysOverdue>1?'s':'')+' ago)');
+    h+='<div class="overdue-line">'+odStr+'</div>';
+  } else if(dueInfo){
+    var dStr='Due '+fmtD(dueInfo.dueDate);if(timeStr)dStr+=' '+timeStr;
+    if(dueInfo.daysUntil===0)dStr+=' ('+L('todayStat').toLowerCase()+')';
+    else if(dueInfo.daysUntil===1){dStr='Due tomorrow \u00b7 '+fmtD(dueInfo.dueDate);if(timeStr)dStr+=' '+timeStr;}
+    else dStr+=' <span class="days">('+dueInfo.daysUntil+' days)</span>';
+    h+='<div class="due-line">'+dStr+'</div>';
+  } else {
+    var isReference=pk&&pk!==dateKey(sel);
+    if(isReference){h+='<div class="due-line" style="color:#666;font-weight:400">'+t.when+'</div>';}
+    else{var todayStr=L('dueToday')+' \u00b7 '+fmtD(sel);if(timeStr)todayStr+=' '+timeStr;h+='<div class="due-line">'+todayStr+'</div>';}
+  }
+  h+='<div class="system">'+L('tool')+' '+t.system+'</div>';
+  var tPrep=TR(t,'prep');
+  if(showPrep&&tPrep){
+    var prepDate=dueInfo?new Date(dueInfo.dueDate.getTime()-864e5):sel;if(prepDate<sel)prepDate=sel;
+    var dayNm=lang==='fr'?['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    h+='<div class="prep">'+L('prepOn')+dayNm[prepDate.getDay()]+' '+prepDate.getDate()+' '+MONTH_NAMES[prepDate.getMonth()]+': '+tPrep+'</div>';
+  }
+  h+='</div>';
+  var tNote=TR(t,'note');var tScope=TR(t,'scope');
+  var hasNote=tNote||tScope;var hasHard=t.hard;var hasPrep=showPrep&&tPrep;var hasOverdue=overdueInfo;
+  if(hasNote||hasHard||hasPrep||hasOverdue){
+    h+='<div class="right">';
+    if(hasNote){h+='<div class="note-icon">i<div class="tooltip">';if(tScope)h+='<b>Scope</b>'+tScope;if(tScope&&tNote)h+='<br><br>';if(tNote)h+='<b>Note</b>'+tNote;h+='</div></div>';}
+    if(hasHard||hasPrep||hasOverdue){h+='<div class="badges">';if(hasHard)h+='<span class="hard">HARD</span>';if(hasPrep)h+='<span class="prep-badge">PREP</span>';if(hasOverdue)h+='<span class="overdue-badge">OVERDUE '+overdueInfo.daysOverdue+'d</span>';h+='</div>';}
+    h+='</div>';
+  }
+  h+='</div>';return h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CRUD (Firebase-backed)
+// ═══════════════════════════════════════════════════════════════
+var editingId=null;
+function openAddTask(){
+  editingId=null;
+  document.getElementById('modalTitle').textContent=lang==='fr'?'Ajouter une t\u00e2che':'Add task';
+  document.getElementById('modalDel').style.display='none';
+  document.getElementById('fTask').value='';document.getElementById('fFreq').value='monthly';
+  document.getElementById('fLayer').value='payroll';document.getElementById('fDay').value='1';
+  document.getElementById('fMd').value='15';document.getElementById('fAm').value='1';
+  document.getElementById('fAd').value='15';document.getElementById('fHard').value='0';
+  document.getElementById('fWhen').value='';document.getElementById('fSystem').value='';
+  document.getElementById('fPrep').value='';document.getElementById('fNote').value='';
+  freqChanged();document.getElementById('taskModal').classList.add('show');
+}
+function openEditTask(id){
+  var t=null;for(var i=0;i<TASKS.length;i++)if(TASKS[i].id===id){t=TASKS[i];break}
+  if(!t)return;editingId=id;
+  document.getElementById('modalTitle').textContent=lang==='fr'?'Modifier la t\u00e2che':'Edit task';
+  document.getElementById('modalDel').style.display='inline-block';
+  document.getElementById('fTask').value=t.task||'';document.getElementById('fFreq').value=t.freq||'monthly';
+  document.getElementById('fLayer').value=t.layer||'payroll';document.getElementById('fDay').value=t.day||1;
+  document.getElementById('fMd').value=t.md||15;document.getElementById('fAm').value=t.am||1;
+  document.getElementById('fAd').value=t.ad||15;document.getElementById('fHard').value=t.hard?'1':'0';
+  document.getElementById('fWhen').value=t.when||'';document.getElementById('fSystem').value=t.system||'';
+  document.getElementById('fPrep').value=t.prep||'';document.getElementById('fNote').value=t.note||'';
+  freqChanged();document.getElementById('taskModal').classList.add('show');
+}
+function closeModal(){document.getElementById('taskModal').classList.remove('show')}
+function freqChanged(){
+  var f=document.getElementById('fFreq').value;
+  document.getElementById('fDayWrap').style.display=(f==='weekly')?'block':'none';
+  document.getElementById('fMdWrap').style.display=(['monthly','bimonthly','monthly-list'].indexOf(f)>=0)?'block':'none';
+  document.getElementById('fAmWrap').style.display=(f==='annual')?'block':'none';
+  document.getElementById('fAdWrap').style.display=(f==='annual')?'block':'none';
+}
+function saveTask(){
+  var name=document.getElementById('fTask').value.trim();if(!name){document.getElementById('fTask').focus();return}
+  var freq=document.getElementById('fFreq').value;
+  var obj={task:name,freq:freq,layer:document.getElementById('fLayer').value,hard:parseInt(document.getElementById('fHard').value),when:document.getElementById('fWhen').value.trim(),system:document.getElementById('fSystem').value.trim(),prep:document.getElementById('fPrep').value.trim()||undefined,note:document.getElementById('fNote').value.trim()||undefined,day:freq==='weekly'?parseInt(document.getElementById('fDay').value):0};
+  if(freq==='monthly'||freq==='bimonthly'||freq==='monthly-list')obj.md=parseInt(document.getElementById('fMd').value)||15;
+  if(freq==='annual'){obj.am=parseInt(document.getElementById('fAm').value);obj.ad=parseInt(document.getElementById('fAd').value)}
+  if(editingId){
+    var isCustom=false;
+    for(var i=0;i<fbCache.custom.length;i++){if(fbCache.custom[i].id===editingId){isCustom=true;for(var k in obj)fbCache.custom[i][k]=obj[k];break}}
+    if(isCustom){fbSet('custom',fbCache.custom)}
+    else{fbCache.edits[editingId]=obj;fbSet('edits/'+editingId,obj)}
+    for(var i=0;i<TASKS.length;i++){if(TASKS[i].id===editingId){for(var k in obj)TASKS[i][k]=obj[k];break}}
+  } else {
+    obj.id='u_'+Date.now();fbCache.custom.push(obj);fbSet('custom',fbCache.custom);TASKS.push(obj);
+  }
+  closeModal();render();
+}
+function confirmDelete(id){
+  var t=null;for(var i=0;i<TASKS.length;i++)if(TASKS[i].id===id){t=TASKS[i];break}
+  if(!t)return;if(!confirm((lang==='fr'?'Supprimer la t\u00e2che :\n\n':'Delete task:\n\n')+'"'+t.task+'"'))return;doDelete(id);
+}
+function deleteEditingTask(){
+  if(!editingId)return;var t=null;for(var i=0;i<TASKS.length;i++)if(TASKS[i].id===editingId){t=TASKS[i];break}
+  if(!confirm((lang==='fr'?'Supprimer :\n\n':'Delete:\n\n')+'"'+(t?t.task:editingId)+'"'))return;doDelete(editingId);closeModal();
+}
+function doDelete(id){
+  var wasCustom=false;
+  fbCache.custom=fbCache.custom.filter(function(t){if(t.id===id){wasCustom=true;return false}return true});
+  if(wasCustom){fbSet('custom',fbCache.custom)}
+  else{fbCache.hidden.push(id);fbSet('hidden',fbCache.hidden)}
+  TASKS=TASKS.filter(function(t){return t.id!==id});
+  delete fbCache.edits[id];fbDel('edits/'+id);render();
+}
+function restoreAll(){
+  if(fbCache.hidden.length===0)return;
+  var msg=lang==='fr'?'Restaurer '+fbCache.hidden.length+' t\u00e2che(s) ? Rechargement de la page.':'Restore '+fbCache.hidden.length+' task(s)? Page will reload.';
+  if(!confirm(msg))return;
+  fbSet('hidden',[]);fbSet('edits',{});location.reload();
+}
+
+
+
+var FR={
+w1:{t:"Relancer les feuilles d'heures en retard"},
+w2:{t:"Collecter les feuilles d'heures hebdomadaires"},
+w3:{t:"Traitement feuilles LHC + consolidation pour Sales Manager"},
+w5:{t:"Tri des emails + cr\u00e9ation de t\u00e2ches"},
+w6:{t:"Approbation client des feuilles d'heures hebdomadaires",p:"Lun : v\u00e9rifier que toutes les feuilles ont \u00e9t\u00e9 envoy\u00e9es aux clients"},
+w7:{t:"Chargement + tri du courrier (lot mardi)",n:"SOP H : trier les scans du bureau ZH en dossiers SL OPS / Non-SL"},
+w6b:{t:"Corrections consolidation LHC + approbation client"},
+w6c:{t:"R\u00e9soudre les probl\u00e8mes de configuration fiscale (Enovetic)",n:"Suite \u00e0 l'email Enovetic \u00abInconsistency\u00bb"},
+w9:{t:"V\u00e9rifier les bulletins de paie provisoires (clients contr\u00f4l\u00e9s)",s:"NTT Data, Marvelous Digital, LHC, Ben's Bus, Electro Materiel, EHL"},
+w10:{t:"Corriger les erreurs de paie"},
+w12:{t:"G\u00e9n\u00e9rer + envoyer les factures hebdomadaires clients"},
+w13:{t:"Audit hebdomadaire des permis de travail",n:"Signaler les permis expirant dans 7 jours. IMES : renouveler au moins 1 jour avant."},
+w14:{t:"Paiement des salaires",n:"Salaires inform\u00e9s vendredi au plus tard. Art. 23 CCT : au plus tard le 5 de M+1."},
+w15:{t:"T\u00e9l\u00e9charger les factures pour Finance"},
+w15b:{t:"Mettre \u00e0 jour la liste clients pour Finance"},
+w15c:{t:"Mise \u00e0 jour de la liste Gestion des contrats",n:"T\u00e9l\u00e9charger Contr\u00f4le Mission depuis Easytemp, identifier les nouvelles missions"},
+w16:{t:"V\u00e9rification statut IMES"},
+w17:{t:"Tri + archivage du courrier (lot vendredi)",n:"SOP H : t\u00e9l\u00e9charger depuis ePost/KLARA, appliquer tag SL OPS, v\u00e9rifier lettres fiscales vs DPI"},
+w18:{t:"Tri des contrats"},
+w19:{t:"Upload + tri des documents employ\u00e9s (SOP complet)",n:"SOP B : processus complet \u2014 identifier employ\u00e9 dans Easytemp, ajouter \u00e0 la liste Joiners, cr\u00e9er dossier OneDrive, renommer + sauvegarder docs, upload dans Easytemp, mettre \u00e0 jour donn\u00e9es personnelles (IBAN, AVS, imp\u00f4t, statut familial), informer Enovetic si compte bancaire fran\u00e7ais, compl\u00e9ter la checklist, r\u00e9pondre \u00e0 l\u2019exp\u00e9diteur. Bloquer 2h le vendredi."},
+w20:{t:"Documents de sortie (AGB + Certificat de travail)",n:"D\u00e9lai d'une semaine \u2014 obligation l\u00e9gale"},
+b1:{t:"Suivi des sinistres accidents SUVA"},
+b2:{t:"Suivi des sinistres maladie Groupe Mutuel"},
+b3:{t:"Suivi des allocations familiales Consimo"},
+b4:{t:"Tri + archivage des contrats sign\u00e9s",n:"R\u00e9union 7 mai : t\u00e9l\u00e9charger contrats sign\u00e9s depuis la bo\u00eete de r\u00e9ception, sauvegarder dans OneDrive + Easytemp, marquer comme sign\u00e9 dans le suivi Contracts Management. Ne pas accumuler \u2014 devient fastidieux en masse."},
+m1:{t:"Collecte des feuilles d'heures mensuelles"},
+m2:{t:"Approbation client des feuilles mensuelles"},
+m3:{t:"Soumettre la paie mensuelle \u00e0 Enovetic"},
+m4:{t:"Paiement des salaires mensuels"},
+m7:{t:"Factures mensuelles clients (v\u00e9rification + approbation)"},
+m8:{t:"Rapports de paie pour Finance"},
+m10:{t:"Cl\u00f4ture de fin de mois"},
+m11:{t:"Revue des contrats arrivant \u00e0 \u00e9ch\u00e9ance + cl\u00f4ture",p:"Mi-mois : extraire la liste des contrats expirant dans les 2 prochaines semaines"},
+m12:{t:"Audit des documents employ\u00e9s (checklist Joiners)",n:"V\u00e9rifier IBAN (\u2192 pas de salaire), AVS (\u2192 pas de caisse de pension), config fiscale (\u2192 corrections). Contr\u00f4le proactif des dossiers.",p:"Extraire la checklist Joiners et signaler les dossiers incomplets. Contacter employ\u00e9s/recruteurs."},
+m13:{t:"Suivi num\u00e9ros AVS manquants",n:"Depuis le rapport mensuel Enovetic. R\u00e9soudre avant le 10."},
+m14:{t:"Suivi IBAN manquants",n:"2 jours apr\u00e8s la cl\u00f4ture mensuelle"},
+m16:{t:"Compl\u00e9ter mod\u00e8les de factures fiscales cantonales \u2192 Comptabilit\u00e9",n:"Utiliser le bon num\u00e9ro DPI par canton. Paiement avant le 31."},
+m18:{t:"Envoyer rappels feuilles d'heures mensuelles aux clients",n:"SOP E : rappeler clients paie mensuelle et clients paie hebdo pour cl\u00f4ture mensuelle.",s:"NTT Data, Ben's Bus, Marvelous Digital, EPFL"},
+m19:{t:"T\u00e9l\u00e9charger relev\u00e9 allocations familiales depuis Consimo",n:"SOP E : t\u00e9l\u00e9charger PDF + Excel. Surligner employ\u00e9s SL en bleu. Envoyer \u00e0 Enovetic."},
+m20:{t:"Rapports paie mensuels \u2014 t\u00e9l\u00e9charger, convertir, envoyer \u00e0 Comptabilit\u00e9",n:"6 rapports Enovetic. Convertir .txt en .xlsx. Partager avec Tatiana."},
+m21:{t:"G\u00e9n\u00e9rer + envoyer certificats AGI aux employ\u00e9s \u00e9ligibles",n:"Pour employ\u00e9s avec option Gains interm\u00e9diaires activ\u00e9e."},
+m23:{t:"V\u00e9rification mensuelle contrats NTT Data + notification client"},
+m24:{t:"Rapprochement rabais NTT Data (suivi offset)"},
+m25:{t:"Rapport mensuel KPI / statistiques pour la Manager",n:"SOP E : t\u00e9l\u00e9charger \u00c9valuation d\u2019exploitation depuis EasyTemp, convertir en Excel, envoyer \u00e0 Matilde. Inclut chiffre d\u2019affaires par client, effectifs et marges."},
+m26:{t:"Compl\u00e9ter le fichier input paie \u2014 clients g\u00e9r\u00e9s par V\u00e2nia",n:"S\u2019assurer que le fichier input paie est \u00e0 jour pour tous les clients g\u00e9r\u00e9s par V\u00e2nia. Permet la couverture en cas d\u2019absence et un traitement pr\u00e9cis de la paie mensuelle."},
+m27:{t:"Compl\u00e9ter le fichier input paie \u2014 clients g\u00e9r\u00e9s par Svetlana",n:"S\u2019assurer que le fichier input paie est \u00e0 jour pour tous les clients g\u00e9r\u00e9s par Svetlana. Permet la couverture en cas d\u2019absence et un traitement pr\u00e9cis de la paie mensuelle."},
+a1:{t:"D\u00e9claration AVS annuelle \u2014 enregistrer sur Consimo, t\u00e9l\u00e9charger vers Deel",p:"D\u00e9c : finaliser toutes les d\u00e9sinscriptions Consimo avant fin d'ann\u00e9e"},
+a1b:{t:"Rapports paie de fin d'ann\u00e9e \u2014 demande \u00e0 Enovetic"},
+a2:{t:"Collecter nouveaux taux d'assurance aupr\u00e8s de tous les prestataires",p:"D\u00e9c : demander confirmations de taux \u00e0 SUVA, GM, Consimo"},
+a2b:{t:"Mettre \u00e0 jour mod\u00e8le simulation salariale avec nouveaux taux"},
+a3:{t:"Mise \u00e0 jour salaires minimaux CCT / cantonaux"},
+a3b:{t:"Rapport statistique SECO \u2014 aligner \u00e9quipes + collecter donn\u00e9es"},
+a3c:{t:"Rapport statistique SECO \u2014 soumettre sur Easygov"},
+a4:{t:"Certificats fiscaux annuels aux employ\u00e9s"},
+a5:{t:"Extensions annuelles contrats NTT Data \u2014 taux de facturation + SO"},
+a6:{t:"Renouvellement licence AVG"},
+a7:{t:"Renouvellements assurances (SUVA, responsabilit\u00e9 civile, GM)"},
+a8:{t:"Rapprochement primes d'assurance annuel"},
+a9:{t:"Revue des mod\u00e8les de contrat"}
+};
+
+var UI={
+en:{title:'Switzerland \u2014 daily ops dashboard',
+overdue:'\u26A0 Overdue \u2014 not marked done',today:'Today',tasks:'task',tasks_p:'tasks',deadline:'deadline',deadlines:'deadlines',
+next7:'Next 7 days',next30:'Next 30 days',next90:'Next 90 days',thisWeek:'This week',
+payrollCal:'Payroll calendar',payrollCalSub:'From Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative',
+monthlyH:'Monthly deadlines',quarterlyH:'Quarterly tasks',annualH:'Annual deadlines',
+overdueStat:'Overdue',todayStat:'Today',hardStat:'Hard deadlines',next7Stat:'Next 7 days',
+dueToday:'Due today',dueTomorrow:'Due tomorrow',dueIn:' days)',ago:' ago)',wasdue:'Overdue \u00b7 was due ',notdone:' \u00b7 not marked done',
+tool:'Tool:',prepOn:'Prepare on ',weekend:'Weekend \u2014 no scheduled tasks. Use arrows to navigate.',
+noTasks:'No scheduled tasks for this date.',doneOf:' done today (',hard:'hard',reset:'reset day',
+show:'[show]',hide:'[hide]',
+legal:'Legal',payroll:'Payroll',invoicing:'Invoicing',lifecycle:'Lifecycle',governance:'Governance',
+pcalRule:'Validate hours by 12:00, payment file by 16:00, payment next working day',pcalSrc:'Source: Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative EasyTemp',
+pcalWk:'Weekly closures',pcalMc:'Monthly close (closes prior month)',pcalNow:'key dates',pcalNext:'Next closure',
+navPrev:'\u2039 Prev',navToday:'Today',navNext:'Next \u203a',
+footer:'Switzerland ops dashboard \u2014 data from Irina Rachieru questionnaire, March 2026. Navigate with arrows. HARD = government penalty or payroll failure if missed.',
+dateLang:'en-GB',
+fTask:'Task name',fFreq:'Frequency',fLayer:'Layer',fDayLabel:'Day of week',fMdLabel:'Day of month',fAmLabel:'Month',fAdLabel:'Day',fHardLabel:'Hard deadline?',fWhenLabel:'When / time',fSystemLabel:'Tool / system',fPrepLabel:'Prep instruction (optional)',fNoteLabel:'Note (optional)',fDelBtn:'Delete',fCancelBtn:'Cancel',fSaveBtn:'Save',fResetAll:'Restore deleted tasks'
+},
+fr:{title:'Suisse \u2014 tableau de bord op\u00e9rationnel',
+overdue:'\u26A0 En retard \u2014 non coch\u00e9',today:"Aujourd'hui",tasks:'t\u00e2che',tasks_p:'t\u00e2ches',deadline:'\u00e9ch\u00e9ance',deadlines:'\u00e9ch\u00e9ances',
+next7:'7 prochains jours',next30:'30 prochains jours',next90:'90 prochains jours',thisWeek:'Cette semaine',
+payrollCal:'Calendrier paie',payrollCalSub:"Depuis Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative",
+monthlyH:'\u00c9ch\u00e9ances mensuelles',quarterlyH:'T\u00e2ches trimestrielles',annualH:'\u00c9ch\u00e9ances annuelles',
+overdueStat:'En retard',todayStat:"Aujourd'hui",hardStat:'Obligatoires',next7Stat:'7 prochains j.',
+dueToday:"\u00c9ch\u00e9ance aujourd'hui",dueTomorrow:'\u00c9ch\u00e9ance demain',dueIn:' jours)',ago:' j. de retard)',wasdue:'En retard \u00b7 \u00e9ch\u00e9ance ',notdone:' \u00b7 non coch\u00e9',
+tool:'Outil :',prepOn:'Pr\u00e9parer le ',weekend:'Week-end \u2014 aucune t\u00e2che. Utilisez les fl\u00e8ches pour naviguer.',
+noTasks:"Aucune t\u00e2che pr\u00e9vue pour cette date.",doneOf:" faites aujourd'hui (",hard:'obligat.',reset:'r\u00e9initialiser',
+show:'[voir]',hide:'[masquer]',
+legal:'L\u00e9gal',payroll:'Paie',invoicing:'Facturation',lifecycle:'Cycle de vie',governance:'Gouvernance',
+pcalRule:'Valider heures avant 12h00, fichier paiement \u00e0 16h00, paiement jour ouvr\u00e9 suivant',pcalSrc:'Source : Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative EasyTemp',
+pcalWk:'Cl\u00f4tures hebdomadaires',pcalMc:'Cl\u00f4ture mensuelle (mois pr\u00e9c\u00e9dent)',pcalNow:'dates cl\u00e9s',pcalNext:'Prochaine cl\u00f4ture',
+navPrev:'\u2039 Pr\u00e9c.',navToday:"Aujourd'hui",navNext:'Suiv. \u203a',
+footer:'Tableau de bord op\u00e9rationnel Suisse \u2014 donn\u00e9es du questionnaire Irina Rachieru, mars 2026. Naviguer avec les fl\u00e8ches. HARD = p\u00e9nalit\u00e9 gouvernementale ou \u00e9chec de paie si manqu\u00e9.',
+dateLang:'fr-FR',
+fTask:'Nom de la t\u00e2che',fFreq:'Fr\u00e9quence',fLayer:'Cat\u00e9gorie',fDayLabel:'Jour de la semaine',fMdLabel:'Jour du mois',fAmLabel:'Mois',fAdLabel:'Jour',fHardLabel:'Obligatoire ?',fWhenLabel:'Quand / heure',fSystemLabel:'Outil / syst\u00e8me',fPrepLabel:'Instruction de pr\u00e9paration (optionnel)',fNoteLabel:'Note (optionnel)',fDelBtn:'Supprimer',fCancelBtn:'Annuler',fSaveBtn:'Enregistrer',fResetAll:'Restaurer les t\u00e2ches supprim\u00e9es'
+}
+};
+
+function renderPcal(){
+  var curMonth=sel.getMonth()+1;
+  var year=sel.getFullYear();
+  document.getElementById('pcalTi').textContent=L('payrollCal')+' 2026';
+
+  var cur=PCAL_2026[curMonth]||{};
+  var nextWeekly=getNextWeeklyClose();
+  var nowH='<div class="lbl">'+MONTH_NAMES[curMonth-1]+' '+year+' \u2014 '+L('pcalRule')+'</div><div class="dates">';
+  nowH+='<div>'+L('pcalWk')+': <b>'+(cur.weeklyStr||'\u2014')+'</b></div>';
+  nowH+='<div>'+L('pcalNext')+': <b>'+(nextWeekly||'\u2014')+'</b></div>';
+  nowH+='<div>'+L('pcalMc')+' ('+MONTH_NAMES[curMonth-1]+'): <b>'+(cur.monthlyClose||'\u2014')+'</b></div>';
+
+  nowH+='</div>';
+  document.getElementById('pcalNow').innerHTML=nowH;
+
+  var monthLabel=lang==='fr'?'Mois':'Month';
+  var tH='<thead><tr><th>'+monthLabel+'</th><th>'+L('pcalWk')+'</th><th>'+L('pcalMc')+'</th></tr></thead><tbody>';
+  for(var i=1;i<=12;i++){
+    var m=PCAL_2026[i]||{};
+    var isC=(i===curMonth&&year===2026);
+    tH+='<tr'+(isC?' class="current"':'')+'><td>'+MONTH_NAMES[i-1]+' 2026</td>';
+    tH+='<td>'+(m.weeklyStr||'\u2014')+'</td>';
+    tH+='<td>'+(m.monthlyClose||'\u2014')+'</td>';
+    tH+='</tr>';
+  }
+  tH+='</tbody>';
+  tH+='<tfoot><tr><td colspan="3" style="padding:10px 0 0;font-size:11px;color:#888">'+L('pcalSrc')+'. '+L('pcalRule')+'.</td></tr></tfoot>';
+  document.getElementById('pcalTbl').innerHTML=tH;
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSLATION
+// ═══════════════════════════════════════════════════════════════
+var lang='en';
+function toggleLang(){lang=lang==='en'?'fr':'en';MONTH_NAMES=lang==='fr'?MONTH_NAMES_FR:MONTH_NAMES_EN;document.getElementById('langBtn').textContent=lang==='en'?'FR':'EN';updateStaticUI();render()}
+function L(k){return UI[lang][k]||UI.en[k]||k}
+
+function updateStaticUI(){
+  document.querySelector('h1').firstChild.textContent=L('title')+' ';
+  document.getElementById('lgLegal').textContent=L('legal');
+  document.getElementById('lgPayroll').textContent=L('payroll');
+  document.getElementById('lgInvoicing').textContent=L('invoicing');
+  document.getElementById('lgLifecycle').textContent=L('lifecycle');
+  document.getElementById('lgGovernance').textContent=L('governance');
+  document.getElementById('navPrev').textContent=L('navPrev');
+  document.getElementById('navToday').textContent=L('navToday');
+  document.getElementById('navNext').textContent=L('navNext');
+  document.getElementById('slOverdue').textContent=L('overdueStat');
+  document.getElementById('slToday').textContent=L('todayStat');
+  document.getElementById('slHard').textContent=L('hardStat');
+  document.getElementById('slPrep').textContent=L('next7Stat');
+  document.getElementById('weekHdr').textContent=L('thisWeek');
+  document.getElementById('pcalHdr').innerHTML=L('payrollCal')+' <span style="font-size:11px;font-weight:400;color:#888;margin-left:8px">'+L('payrollCalSub')+'</span>';
+  document.getElementById('footerTxt').textContent=L('footer');
+  var dlabels=document.querySelectorAll('[data-l]');
+  for(var i=0;i<dlabels.length;i++){var k=dlabels[i].getAttribute('data-l');if(L(k)!==k)dlabels[i].textContent=L(k)}
+  if(fbCache.hidden.length>0){document.getElementById('restoreLink').style.display='inline';document.getElementById('restoreLink').textContent=L('fResetAll')+' ('+fbCache.hidden.length+')'}
+  else{document.getElementById('restoreLink').style.display='none'}
+  updateUserBar();
+}
+
+function TR(t,field){
+  if(lang==='en')return t[field]||'';
+  var id=t.id;
+  if(id&&FR[id]){var map={task:'t',note:'n',prep:'p',scope:'s'};var frKey=map[field];if(frKey&&FR[id][frKey])return FR[id][frKey]}
+  if(field==='task'&&t.freq==='payroll-cal'){
+    var txt=t.task||'';
+    txt=txt.replace('Weekly payroll closure (submit weekly payroll to Enovetic before deadline)','Cl\u00f4ture paie hebdomadaire (soumettre la paie \u00e0 Enovetic avant le d\u00e9lai)');
+    txt=txt.replace('Monthly payroll closure','Cl\u00f4ture paie mensuelle');txt=txt.replace('closes','cl\u00f4ture');
+    txt=txt.replace('Quellensteuer due','Quellensteuer \u00e9ch\u00e9ance');txt=txt.replace('withholding tax for','imp\u00f4t \u00e0 la source pour');return txt;
+  }
+  if(field==='task'&&t.freq==='payroll-cal-prep'){
+    var txt=t.task||'';
+    txt=txt.replace('Tomorrow: weekly payroll closure','Demain : cl\u00f4ture paie hebdomadaire');txt=txt.replace('ensure all hours are validated','v\u00e9rifier que toutes les heures sont valid\u00e9es');
+    txt=txt.replace('Tomorrow: monthly payroll closure for','Demain : cl\u00f4ture paie mensuelle pour');txt=txt.replace('ensure all hours validated','v\u00e9rifier que toutes les heures sont valid\u00e9es');
+    txt=txt.replace('Quellensteuer due in 5 days for','Quellensteuer \u00e9ch\u00e9ance dans 5 jours pour');return txt;
+  }
+  if(id&&id.indexOf('tax_recon_')===0){
+    if(field==='task')return 'Rappel rapprochement fiscal \u2014 v\u00e9rifier factures cantonales dans le courrier';
+    if(field==='note')return "Lors du tri ePost aujourd\u2019hui, v\u00e9rifier les factures fiscales cantonales. Si trouv\u00e9es : rapprocher avec le rapport ELM d\u2019Enovetic (Swissdec). V\u00e9rifier montants par canton. Nouveau canton = demander nouveau num\u00e9ro DPI avant le 20. Alimente m16 (mod\u00e8les factures pour Comptabilit\u00e9 avant le 25).";
+  }
+  return t[field]||'';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render(){
+  document.getElementById('dateLabel').textContent=fmtFull(sel);
+  var today=tasksForDate(sel);var overdue=overdueForDate(sel,21);
+  var upcoming7=upcomingInWindow(sel,1,7);
+  var seen7={};var unique7Count=0;for(var i=0;i<upcoming7.length;i++){if(!seen7[upcoming7[i].t.id]){seen7[upcoming7[i].t.id]=true;unique7Count++}}
+  var hardC=0;for(var i=0;i<today.length;i++)if(today[i].hard)hardC++;
+  document.getElementById('sToday').textContent=today.length;
+  var oEl=document.getElementById('sOverdue');oEl.textContent=overdue.length;oEl.className='v'+(overdue.length>0?' red':'');
+  var hEl=document.getElementById('sHard');hEl.textContent=hardC;hEl.className='v'+(hardC>0?' red':'');
+  var pEl=document.getElementById('sPrep');pEl.textContent=unique7Count;pEl.className='v'+(unique7Count>0?' amber':'');
+
+  // Overdue section
+  var oSec=document.getElementById('overdueSec');
+  if(overdue.length>0){
+    var h='<div class="horizon-hdr" style="color:#A32D2D;border-bottom-color:#F09595"><span>'+L('overdue')+'</span><span class="count">'+overdue.length+' '+(overdue.length>1?L('tasks_p'):L('tasks'))+'</span></div>';
+    for(var i=0;i<overdue.length;i++)h+=tkHTML(overdue[i].t,true,null,true,dateKey(overdue[i].originalDate),overdue[i]);
+    oSec.innerHTML=h;
+  } else oSec.innerHTML='';
+
+  // Today section
+  var tEl=document.getElementById('todaySec');var pArea=document.getElementById('progressArea');var wd=sel.getDay();
+  if(wd>=1&&wd<=5){
+    var doneCount=0;for(var i=0;i<today.length;i++)if(isDone(today[i].id,dateKey(sel)))doneCount++;
+    var pct=today.length>0?Math.round(doneCount/today.length*100):0;
+    pArea.innerHTML='<div class="progress-label"><span>'+doneCount+' / '+today.length+L('doneOf')+pct+'%)</span>'+(doneCount>0?'<button class="reset-btn" onclick="resetDay()">'+L('reset')+'</button>':'')+'</div><div class="progress"><div class="bar" style="width:'+pct+'%"></div></div>';
+    var h='<div class="horizon-hdr"><span>'+L('today')+' \u2014 '+fmtD(sel)+'</span><span class="count">'+today.length+' '+(today.length===1?L('tasks'):L('tasks_p'))+'</span></div>';
+    if(today.length===0)h+='<div class="horizon-empty">'+L('noTasks')+'</div>';
+    for(var i=0;i<today.length;i++)h+=tkHTML(today[i],true,null,true);
+    tEl.innerHTML=h;
+  } else {pArea.innerHTML='';tEl.innerHTML='<div class="weekend">'+L('weekend')+'</div>'}
+
+  // Horizons
+  function renderHorizon(elId,label,startDay,endDay,seenGlobal){
+    var items=upcomingInWindow(sel,startDay,endDay);var seen={};var unique=[];
+    for(var i=0;i<items.length;i++){var tid=items[i].t.id;if(seen[tid]||seenGlobal[tid])continue;seen[tid]=true;seenGlobal[tid]=true;unique.push(items[i])}
+    var el=document.getElementById(elId);
+    if(unique.length===0){el.innerHTML='';return}
+    var h='<div class="horizon-hdr"><span>'+label+'</span><span class="count">'+unique.length+' '+(unique.length===1?L('deadline'):L('deadlines'))+'</span></div>';
+    for(var i=0;i<unique.length;i++)h+=tkHTML(unique[i].t,true,unique[i],false);
+    el.innerHTML=h;
+  }
+  var seenGlobal={};
+  renderHorizon('horizon7Sec',L('next7'),1,7,seenGlobal);
+  renderHorizon('horizon30Sec',L('next30'),8,30,seenGlobal);
+  renderHorizon('horizon90Sec',L('next90'),31,90,seenGlobal);
+
+  // Week strip
+  var wEl=document.getElementById('weekStrip');var dw=sel.getDay();var mon=new Date(sel.getTime()+((dw===0?-6:1-dw))*864e5);var h='';
+  for(var i=0;i<5;i++){
+    var dd=new Date(mon.getTime()+i*864e5);var ts=tasksForDate(dd);var isT=sameDay(dd,sel);
+    var hards=0;var doneC=0;for(var j=0;j<ts.length;j++){if(ts[j].hard)hards++;if(isDone(ts[j].id,dateKey(dd)))doneC++}
+    h+='<div class="wday'+(isT?' today':'')+'" onclick="sel=new Date('+dd.getTime()+');render()">';
+    var dns=lang==='fr'?['','Lun','Mar','Mer','Jeu','Ven']:['','Mon','Tue','Wed','Thu','Fri'];
+    h+='<div class="dname">'+dns[dd.getDay()]+' '+dd.getDate()+(doneC>0?' <span style="font-size:10px;color:#0F6E56;font-weight:400">'+doneC+'/'+ts.length+'</span>':'')+'</div>';
+    var show=Math.min(ts.length,4);for(var j=0;j<show;j++)h+='<div class="mini '+ts[j].layer+'">'+ts[j].task+'</div>';
+    if(ts.length>4)h+='<div class="more">+'+(ts.length-4)+' more</div>';
+    if(hards>0)h+='<div class="hards">'+hards+' '+L('hard')+'</div>';
+    h+='</div>';
+  }
+  wEl.innerHTML=h;
+
+  // Payroll calendar
+  renderPcal();
+
+  // Reference sections
+  var mTasks=TASKS.filter(function(t){return t.freq==="monthly"||t.freq==="monthly-list"||t.freq==="bimonthly"}).sort(function(a,b){return(a.md||0)-(b.md||0)});
+  var qTasks=TASKS.filter(function(t){return t.freq==="quarterly"});
+  var aTasks=TASKS.filter(function(t){return t.freq==="annual"}).sort(function(a,b){return((a.am||0)*100+(a.ad||0))-((b.am||0)*100+(b.ad||0))});
+  var mk=monthKey(sel);var qk=quarterKey(sel);var yk=yearKey(sel);
+
+  document.getElementById('monthlyHdr').innerHTML=L('monthlyH')+' <button class="collapse-btn" onclick="toggle(\'monthly\')">'+L(collapsed.monthly?'show':'hide')+'</button>';
+  document.getElementById('quarterlyHdr').innerHTML=L('quarterlyH')+' <button class="collapse-btn" onclick="toggle(\'quarterly\')">'+L(collapsed.quarterly?'show':'hide')+'</button>';
+  document.getElementById('annualHdr').innerHTML=L('annualH')+' <button class="collapse-btn" onclick="toggle(\'annual\')">'+L(collapsed.annual?'show':'hide')+'</button>';
+
+  if(!collapsed.monthly){var mDone=0;for(var i=0;i<mTasks.length;i++)if(isDone(mTasks[i].id,mk))mDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+mDone+' / '+mTasks.length+'</span></div>';for(var i=0;i<mTasks.length;i++)h+=tkHTML(mTasks[i],false,null,true,mk);document.getElementById('monthlySec').innerHTML=h} else document.getElementById('monthlySec').innerHTML='';
+  if(!collapsed.quarterly){var qDone=0;for(var i=0;i<qTasks.length;i++)if(isDone(qTasks[i].id,qk))qDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+qDone+' / '+qTasks.length+'</span></div>';for(var i=0;i<qTasks.length;i++)h+=tkHTML(qTasks[i],false,null,true,qk);document.getElementById('quarterlySec').innerHTML=h} else document.getElementById('quarterlySec').innerHTML='';
+  if(!collapsed.annual){var aDone=0;for(var i=0;i<aTasks.length;i++)if(isDone(aTasks[i].id,yk))aDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+aDone+' / '+aTasks.length+'</span></div>';for(var i=0;i<aTasks.length;i++)h+=tkHTML(aTasks[i],true,null,true,yk);document.getElementById('annualSec').innerHTML=h} else document.getElementById('annualSec').innerHTML='';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE INIT + POLLING
+// ═══════════════════════════════════════════════════════════════
+async function fbInit(){
+  var statusEl=document.getElementById('todaySec');
+  try{
+    statusEl.innerHTML='<div style="padding:20px;text-align:center;color:#888">Connecting to Firebase\u2026</div>';
+    var data=await fbGet('');
+    if(data===null){
+      // Firebase returned null — could be empty DB or connection failed
+      // Test with a write
+      statusEl.innerHTML='<div style="padding:20px;text-align:center;color:#888">Testing write access\u2026</div>';
+      await fbSet('_ping',{t:Date.now()});
+      var ping=await fbGet('_ping');
+      if(!ping){
+        throw new Error('Cannot read/write Firebase. Check rules and URL.');
+      }
+      // DB is empty but accessible — seed it
+      await fbSet('team',fbCache.team);
+      data={};
+    }
+    fbCache.done=data.done||{};
+    fbCache.assignments=data.assignments||{};
+    fbCache.custom=data.custom||[];
+    fbCache.hidden=data.hidden||[];
+    fbCache.edits=data.edits||{};
+    if(data.team)fbCache.team=data.team;
+    // Apply custom tasks
+    for(var i=0;i<fbCache.custom.length;i++)TASKS.push(fbCache.custom[i]);
+    if(fbCache.hidden.length>0)TASKS=TASKS.filter(function(t){return fbCache.hidden.indexOf(t.id)<0});
+    for(var i=0;i<TASKS.length;i++){var e=fbCache.edits[TASKS[i].id];if(e)for(var k in e)TASKS[i][k]=e[k]}
+    fbReady=true;
+    document.getElementById('connDot').className='conn-dot on';
+    if(!currentUser)promptUser();
+    updateStaticUI();render();
+  }catch(e){
+    console.error('Firebase init failed:',e);
+    document.getElementById('connDot').className='conn-dot off';
+    statusEl.innerHTML='<div style="padding:20px;text-align:center"><div style="color:#A32D2D;font-weight:600;margin-bottom:8px">\u26A0 Firebase connection failed</div><div style="font-size:12px;color:#666;margin-bottom:12px">'+e.message+'</div><div style="font-size:12px;color:#666">Check:<br>1. Firebase Realtime Database rules are set to read/write: true<br>2. Database URL is correct<br>3. You have internet access</div><div style="margin-top:12px"><button onclick="location.reload()" style="padding:6px 16px;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-family:inherit">Retry</button> <button onclick="startOffline()" style="padding:6px 16px;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-family:inherit">Work offline</button></div></div>';
+  }
+}
+
+function startOffline(){
+  // Fallback to localStorage
+  fbReady=true;
+  document.getElementById('connDot').className='conn-dot off';
+  var lsCustom=[];try{var v=localStorage.getItem('ch_custom_tasks');if(v)lsCustom=JSON.parse(v)}catch(e){}
+  var lsHidden=[];try{var v=localStorage.getItem('ch_hidden_tasks');if(v)lsHidden=JSON.parse(v)}catch(e){}
+  var lsEdits={};try{var v=localStorage.getItem('ch_task_edits');if(v)lsEdits=JSON.parse(v)}catch(e){}
+  for(var i=0;i<lsCustom.length;i++)TASKS.push(lsCustom[i]);
+  if(lsHidden.length>0)TASKS=TASKS.filter(function(t){return lsHidden.indexOf(t.id)<0});
+  for(var i=0;i<TASKS.length;i++){var e=lsEdits[TASKS[i].id];if(e)for(var k in e)TASKS[i][k]=e[k]}
+  // Override Firebase functions to use localStorage
+  window.isDone=function(taskId,pk){try{return localStorage.getItem('done_'+pk+'_'+taskId)==='1'}catch(e){return false}};
+  window.setDone=function(taskId,pk,v){try{localStorage.setItem('done_'+pk+'_'+taskId,v?'1':'0')}catch(e){}};
+  if(!currentUser)promptUser();
+  updateStaticUI();render();
+}
+
+// Poll for changes every 10 seconds
+var lastPollHash='';
+async function poll(){
+  if(!fbReady)return;
+  try{
+    var data=await fbGet('');
+    if(!data)return;
+    var hash=JSON.stringify(data.done||{})+JSON.stringify(data.assignments||{});
+    if(hash!==lastPollHash){
+      lastPollHash=hash;
+      fbCache.done=data.done||{};
+      fbCache.assignments=data.assignments||{};
+      if(data.team)fbCache.team=data.team;
+      render();
+    }
+  }catch(e){}
+}
+setInterval(poll,10000);
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+// Show loading state, then init Firebase
+document.getElementById('todaySec').innerHTML='<div style="padding:20px;text-align:center;color:#888">Connecting to Firebase\u2026<br><span style="font-size:11px">'+FB+'</span></div>';
+fbInit();
+
+</script>
+</body>
+</html>
