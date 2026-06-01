@@ -117,6 +117,20 @@ h1{font-size:18px;font-weight:600;margin-bottom:12px}
 .conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .conn-dot.on{background:#0F6E56}
 .conn-dot.off{background:#A32D2D}
+.wl-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.wl-table th{padding:6px 4px;text-align:center;font-weight:600;color:#444;border-bottom:2px solid #ddd;font-size:11px}
+.wl-table th:first-child{text-align:left;min-width:100px}
+.wl-table td{padding:6px 4px;text-align:center;border-bottom:1px solid #eee;cursor:pointer;border-radius:4px}
+.wl-table td:first-child{text-align:left;font-weight:600;color:#333;cursor:default}
+.wl-table td.wl-g{background:#E8F5E9;color:#2E7D32}
+.wl-table td.wl-a{background:#FFF8E1;color:#F57F17}
+.wl-table td.wl-r{background:#FCE4EC;color:#A32D2D;font-weight:600}
+.wl-table td.wl-0{color:#ccc}
+.wl-table td:hover:not(:first-child){outline:2px solid #185FA5;outline-offset:-1px}
+.wl-table .total{font-weight:600;background:#f5f5f3}
+.wl-tabs{display:flex;gap:4px;margin-top:8px;margin-bottom:4px}
+.wl-tabs button{font-size:11px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-family:inherit}
+.wl-tabs button.active{background:#185FA5;color:#fff;border-color:#185FA5}
 .collapse-btn{font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:0;margin-left:8px;font-family:inherit}
 .freq-tag{font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle}
 .freq-tag.monthly{color:#185FA5;background:#D6E8FA}
@@ -189,6 +203,9 @@ h1{font-size:18px;font-weight:600;margin-bottom:12px}
 
 <div class="sec" id="weekHdr">This week</div>
 <div class="week-strip" id="weekStrip"></div>
+
+<div class="sec" id="workloadHdr" style="cursor:pointer" onclick="toggleWorkload()">Workload overview <span id="workloadToggle" style="font-size:12px;color:#185FA5;margin-left:8px">[show]</span></div>
+<div id="workloadSec" style="display:none"></div>
 
 <div class="sec" id="pcalHdr">Payroll calendar <span style="font-size:11px;font-weight:400;color:#888;margin-left:8px">From Enovetic EasyTemp → Switzerland clients → Innovative</span></div>
 <div class="pcal">
@@ -793,7 +810,7 @@ a9:{t:"Revue des mod\u00e8les de contrat"}
 var UI={
 en:{title:'Switzerland \u2014 daily ops dashboard',
 overdue:'\u26A0 Overdue \u2014 not marked done',today:'Today',tasks:'task',tasks_p:'tasks',deadline:'deadline',deadlines:'deadlines',
-next7:'Next 7 days',next30:'Next 30 days',next90:'Next 90 days',thisWeek:'This week',
+next7:'Next 7 days',next30:'Next 30 days',next90:'Next 90 days',thisWeek:'This week',workloadH:'Workload overview',
 payrollCal:'Payroll calendar',payrollCalSub:'From Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative',
 monthlyH:'Monthly deadlines',quarterlyH:'Quarterly tasks',annualH:'Annual deadlines',
 overdueStat:'Overdue',todayStat:'Today',hardStat:'Hard deadlines',next7Stat:'Next 7 days',
@@ -811,7 +828,7 @@ fTask:'Task name',fFreq:'Frequency',fLayer:'Layer',fDayLabel:'Day of week',fMdLa
 },
 fr:{title:'Suisse \u2014 tableau de bord op\u00e9rationnel',
 overdue:'\u26A0 En retard \u2014 non coch\u00e9',today:"Aujourd'hui",tasks:'t\u00e2che',tasks_p:'t\u00e2ches',deadline:'\u00e9ch\u00e9ance',deadlines:'\u00e9ch\u00e9ances',
-next7:'7 prochains jours',next30:'30 prochains jours',next90:'90 prochains jours',thisWeek:'Cette semaine',
+next7:'7 prochains jours',next30:'30 prochains jours',next90:'90 prochains jours',thisWeek:'Cette semaine',workloadH:'Aper\u00e7u charge de travail',
 payrollCal:'Calendrier paie',payrollCalSub:"Depuis Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative",
 monthlyH:'\u00c9ch\u00e9ances mensuelles',quarterlyH:'T\u00e2ches trimestrielles',annualH:'\u00c9ch\u00e9ances annuelles',
 overdueStat:'En retard',todayStat:"Aujourd'hui",hardStat:'Obligatoires',next7Stat:'7 prochains j.',
@@ -828,6 +845,100 @@ dateLang:'fr-FR',
 fTask:'Nom de la t\u00e2che',fFreq:'Fr\u00e9quence',fLayer:'Cat\u00e9gorie',fDayLabel:'Jour de la semaine',fMdLabel:'Jour du mois',fAmLabel:'Mois',fAdLabel:'Jour',fHardLabel:'Obligatoire ?',fWhenLabel:'Quand / heure',fSystemLabel:'Outil / syst\u00e8me',fPrepLabel:'Instruction de pr\u00e9paration (optionnel)',fNoteLabel:'Note (optionnel)',fDelBtn:'Supprimer',fCancelBtn:'Annuler',fSaveBtn:'Enregistrer',fResetAll:'Restaurer les t\u00e2ches supprim\u00e9es'
 }
 };
+
+// ═══════════════════════════════════════════════════════════════
+// WORKLOAD OVERVIEW
+// ═══════════════════════════════════════════════════════════════
+var wlVisible=false;
+var wlView='week';
+function toggleWorkload(){wlVisible=!wlVisible;document.getElementById('workloadSec').style.display=wlVisible?'block':'none';document.getElementById('workloadToggle').textContent=wlVisible?'[hide]':'[show]';if(wlVisible)renderWorkload()}
+function setWlView(v){wlView=v;renderWorkload()}
+
+function renderWorkload(){
+  if(!wlVisible)return;
+  var el=document.getElementById('workloadSec');
+  var team=fbCache.team.slice();team.push(lang==='fr'?'Non assign\u00e9':'Unassigned');
+  
+  // Compute date range
+  var dates=[];
+  var dw=sel.getDay();var mon=new Date(sel.getTime()+((dw===0?-6:1-dw))*864e5);
+  
+  if(wlView==='week'){
+    for(var i=0;i<5;i++)dates.push(new Date(mon.getTime()+i*864e5));
+  } else {
+    // Month view: all weekdays in the current month
+    var y=sel.getFullYear(),m=sel.getMonth();
+    for(var d=1;d<=31;d++){
+      var dt=new Date(y,m,d);
+      if(dt.getMonth()!==m)break;
+      if(dt.getDay()>=1&&dt.getDay()<=5)dates.push(dt);
+    }
+  }
+  
+  // Build data: team x dates
+  var data={};
+  for(var ti=0;ti<team.length;ti++)data[team[ti]]={total:0,hard:0,days:{}};
+  
+  for(var di=0;di<dates.length;di++){
+    var dd=dates[di];var dk=dateKey(dd);var ts=tasksForDate(dd);
+    for(var ti=0;ti<team.length;ti++)data[team[ti]].days[dk]={count:0,hard:0,done:0};
+    for(var j=0;j<ts.length;j++){
+      var t=ts[j];
+      var assigned=getAssignment(t.id);
+      var bucket=assigned||team[team.length-1]; // unassigned
+      if(!data[bucket])continue;
+      if(!data[bucket].days[dk])data[bucket].days[dk]={count:0,hard:0,done:0};
+      data[bucket].days[dk].count++;
+      data[bucket].total++;
+      if(t.hard){data[bucket].days[dk].hard++;data[bucket].hard++}
+      if(isDone(t.id,dk))data[bucket].days[dk].done++;
+    }
+  }
+  
+  // Day name helpers
+  var dns=lang==='fr'?['Dim','Lun','Mar','Mer','Jeu','Ven','Sam']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var mnShort=lang==='fr'?['Janv','F\u00e9vr','Mars','Avr','Mai','Juin','Juil','Ao\u00fbt','Sept','Oct','Nov','D\u00e9c']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  
+  // Render tabs
+  var h='<div class="wl-tabs">';
+  h+='<button class="'+(wlView==='week'?'active':'')+'" onclick="setWlView(\'week\')">'+(lang==='fr'?'Semaine':'Week')+'</button>';
+  h+='<button class="'+(wlView==='month'?'active':'')+'" onclick="setWlView(\'month\')">'+(lang==='fr'?'Mois':'Month')+'</button>';
+  h+='</div>';
+  
+  // Render table
+  h+='<div style="overflow-x:auto"><table class="wl-table"><thead><tr><th></th>';
+  for(var di=0;di<dates.length;di++){
+    var dd=dates[di];
+    var isToday=sameDay(dd,new Date());
+    var label=dns[dd.getDay()]+' '+dd.getDate();
+    if(wlView==='month')label=dd.getDate()+'';
+    h+='<th'+(isToday?' style="color:#185FA5;border-bottom-color:#185FA5"':'')+'>'+label+'</th>';
+  }
+  h+='<th>'+(lang==='fr'?'Total':'Total')+'</th></tr></thead><tbody>';
+  
+  for(var ti=0;ti<team.length;ti++){
+    var name=team[ti];var short=name.split(' ')[0];
+    var row=data[name];
+    var isUnassigned=ti===team.length-1;
+    h+='<tr'+(isUnassigned?' style="opacity:0.6;font-style:italic"':'')+'><td>'+short+'</td>';
+    for(var di=0;di<dates.length;di++){
+      var dk=dateKey(dates[di]);
+      var cell=row.days[dk]||{count:0,hard:0,done:0};
+      var cls=cell.count===0?'wl-0':cell.count<=3?'wl-g':cell.count<=6?'wl-a':'wl-r';
+      var txt=cell.count===0?'\u00b7':cell.count+'';
+      if(cell.hard>0)txt+=' <span style="font-size:9px;color:#A32D2D">('+cell.hard+'h)</span>';
+      if(cell.done>0&&cell.done===cell.count)txt='\u2714';
+      else if(cell.done>0)txt+=' <span style="font-size:9px;color:#0F6E56">\u2714'+cell.done+'</span>';
+      h+='<td class="'+cls+'" title="'+short+': '+cell.count+' tasks on '+fmtD(dates[di])+'" onclick="sel=new Date('+dates[di].getTime()+');render()">'+txt+'</td>';
+    }
+    // Total
+    var tCls=row.total<=15?'wl-g':row.total<=25?'wl-a':'wl-r';
+    h+='<td class="total '+tCls+'">'+row.total+(row.hard>0?' <span style="font-size:9px;color:#A32D2D">('+row.hard+'h)</span>':'')+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
 
 function renderPcal(){
   var curMonth=sel.getMonth()+1;
@@ -883,6 +994,7 @@ function updateStaticUI(){
   document.getElementById('slHard').textContent=L('hardStat');
   document.getElementById('slPrep').textContent=L('next7Stat');
   document.getElementById('weekHdr').textContent=L('thisWeek');
+  document.getElementById('workloadHdr').innerHTML=L('workloadH')+' <span id="workloadToggle" style="font-size:12px;color:#185FA5;margin-left:8px">'+(wlVisible?'['+L('hide')+']':'['+L('show')+']')+'</span>';
   document.getElementById('pcalHdr').innerHTML=L('payrollCal')+' <span style="font-size:11px;font-weight:400;color:#888;margin-left:8px">'+L('payrollCalSub')+'</span>';
   document.getElementById('footerTxt').textContent=L('footer');
   var dlabels=document.querySelectorAll('[data-l]');
@@ -981,6 +1093,7 @@ function render(){
 
   // Payroll calendar
   renderPcal();
+  renderWorkload();
 
   // Reference sections
   var mTasks=TASKS.filter(function(t){return t.freq==="monthly"||t.freq==="monthly-list"||t.freq==="bimonthly"}).sort(function(a,b){return(a.md||0)-(b.md||0)});
