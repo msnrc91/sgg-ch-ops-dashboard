@@ -123,9 +123,11 @@ h1{font-size:18px;font-weight:600;margin-bottom:12px}
 .wl-table td{padding:6px 4px;text-align:center;border-bottom:1px solid #eee;cursor:pointer;border-radius:4px}
 .wl-table td:first-child{text-align:left;font-weight:600;color:#333;cursor:default}
 .wl-table td.wl-g{background:#E8F5E9;color:#2E7D32}
-.wl-table td.wl-a{background:#FFF8E1;color:#F57F17}
+.wl-table td.wl-a{background:#FFF3E0;color:#E65100}
 .wl-table td.wl-r{background:#FCE4EC;color:#A32D2D;font-weight:600}
 .wl-table td.wl-0{color:#ccc}
+.wl-pend{color:#E67E22;font-weight:600}
+.wl-done-num{color:#0F6E56;font-weight:600}
 .wl-table td:hover:not(:first-child){outline:2px solid #185FA5;outline-offset:-1px}
 .wl-table .total{font-weight:600;background:#f5f5f3}
 .wl-tabs{display:flex;gap:4px;margin-top:8px;margin-bottom:4px}
@@ -396,7 +398,7 @@ var MONTH_NAMES=MONTH_NAMES_EN;
 // FIREBASE CONFIG + HELPERS
 // ═══════════════════════════════════════════════════════════════
 var FB="https://ch-ops-dashboard-default-rtdb.europe-west1.firebasedatabase.app";
-var fbCache={done:{},assignments:{},custom:[],hidden:[],edits:{},team:['Irina Rachieru','Svetlana Goronja','V\u00e2nia Silva','Matilde Carrola']};
+var fbCache={done:{},assignments:{},custom:[],hidden:[],edits:{},team:['Svetlana Goronja','V\u00e2nia Silva']};
 var fbReady=false;
 var currentUser=localStorage.getItem('ch_user')||'';
 
@@ -924,15 +926,24 @@ function renderWorkload(){
     for(var di=0;di<dates.length;di++){
       var dk=dateKey(dates[di]);
       var cell=row.days[dk]||{count:0,hard:0,done:0};
-      var cls=cell.count===0?'wl-0':cell.count<=3?'wl-g':cell.count<=6?'wl-a':'wl-r';
-      var txt=cell.count===0?'\u00b7':cell.count+'';
-      if(cell.done>0&&cell.done===cell.count)txt='\u2714';
-      else if(cell.done>0)txt+=' <span style="font-size:9px;color:#0F6E56">\u2714'+cell.done+'</span>';
-      h+='<td class="'+cls+'" title="'+short+': '+cell.count+' tasks on '+fmtD(dates[di])+'" onclick="sel=new Date('+dates[di].getTime()+');render()">'+txt+'</td>';
+      var cls=cell.count===0?'wl-0':'';
+      var pending=cell.count-cell.done;
+      var txt='';
+      if(cell.count===0)txt='\u00b7';
+      else if(cell.done===0)txt='<span class="wl-pend">'+cell.count+'</span>';
+      else if(pending===0)txt='<span class="wl-done-num">'+cell.done+'</span>';
+      else txt='<span class="wl-pend">'+pending+'</span><span style="color:#ccc;font-size:9px"> | </span><span class="wl-done-num">'+cell.done+'</span>';
+      h+='<td class="'+cls+'" title="'+short+': '+pending+' pending, '+cell.done+' done" onclick="sel=new Date('+dates[di].getTime()+');render()">'+txt+'</td>';
     }
     // Total
-    var tCls=row.total<=15?'wl-g':row.total<=25?'wl-a':'wl-r';
-    h+='<td class="total '+tCls+'">'+row.total+'</td>';
+    var totalDone=0;for(var di2=0;di2<dates.length;di2++){var dk2=dateKey(dates[di2]);var c2=row.days[dk2]||{count:0,done:0};totalDone+=c2.done}
+    var totalPend=row.total-totalDone;
+    var totalTxt='';
+    if(row.total===0)totalTxt='\u00b7';
+    else if(totalDone===0)totalTxt='<span class="wl-pend">'+row.total+'</span>';
+    else if(totalPend===0)totalTxt='<span class="wl-done-num">'+row.total+'</span>';
+    else totalTxt='<span class="wl-pend">'+totalPend+'</span><span style="color:#ccc;font-size:9px"> | </span><span class="wl-done-num">'+totalDone+'</span>';
+    h+='<td class="total">'+totalTxt+'</td>';
     h+='</tr>';
   }
   h+='</tbody></table></div>';
