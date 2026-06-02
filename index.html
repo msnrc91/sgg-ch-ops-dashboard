@@ -194,8 +194,8 @@ h1{font-size:18px;font-weight:600;margin-bottom:12px}
 <div class="stat"><div class="l" id="slPrep">Next 7 days</div><div class="v" id="sPrep">0</div></div>
 </div>
 
-<div class="sec" id="workloadHdr" style="cursor:pointer" onclick="toggleWorkload()">Workload overview <span id="workloadToggle" style="font-size:12px;color:#185FA5;margin-left:8px">[show]</span></div>
-<div id="workloadSec" style="display:none"></div>
+<div class="sec" id="workloadHdr" style="cursor:pointer" onclick="toggleWorkload()">Workload overview <span id="workloadToggle" style="font-size:12px;color:#185FA5;margin-left:8px">[hide]</span></div>
+<div id="workloadSec"></div>
 
 <div id="progressArea"></div>
 <div id="overdueSec"></div>
@@ -849,7 +849,7 @@ fTask:'Nom de la t\u00e2che',fFreq:'Fr\u00e9quence',fLayer:'Cat\u00e9gorie',fDay
 // ═══════════════════════════════════════════════════════════════
 // WORKLOAD OVERVIEW
 // ═══════════════════════════════════════════════════════════════
-var wlVisible=false;
+var wlVisible=true;
 var wlView='week';
 function toggleWorkload(){wlVisible=!wlVisible;document.getElementById('workloadSec').style.display=wlVisible?'block':'none';document.getElementById('workloadToggle').textContent=wlVisible?'[hide]':'[show]';if(wlVisible)renderWorkload()}
 function setWlView(v){wlView=v;renderWorkload()}
@@ -926,18 +926,27 @@ function renderWorkload(){
       var cell=row.days[dk]||{count:0,hard:0,done:0};
       var cls=cell.count===0?'wl-0':cell.count<=3?'wl-g':cell.count<=6?'wl-a':'wl-r';
       var txt=cell.count===0?'\u00b7':cell.count+'';
-      if(cell.hard>0)txt+=' <span style="font-size:9px;color:#A32D2D">('+cell.hard+'h)</span>';
       if(cell.done>0&&cell.done===cell.count)txt='\u2714';
       else if(cell.done>0)txt+=' <span style="font-size:9px;color:#0F6E56">\u2714'+cell.done+'</span>';
       h+='<td class="'+cls+'" title="'+short+': '+cell.count+' tasks on '+fmtD(dates[di])+'" onclick="sel=new Date('+dates[di].getTime()+');render()">'+txt+'</td>';
     }
     // Total
     var tCls=row.total<=15?'wl-g':row.total<=25?'wl-a':'wl-r';
-    h+='<td class="total '+tCls+'">'+row.total+(row.hard>0?' <span style="font-size:9px;color:#A32D2D">('+row.hard+'h)</span>':'')+'</td>';
+    h+='<td class="total '+tCls+'">'+row.total+'</td>';
     h+='</tr>';
   }
   h+='</tbody></table></div>';
   el.innerHTML=h;
+}
+
+function getNextWeeklyClose(){
+  var today=new Date();var dom=today.getDate();var mo=today.getMonth()+1;
+  var pcal=PCAL_2026[mo];if(!pcal)return null;
+  for(var i=0;i<pcal.weekly.length;i++){if(pcal.weekly[i]>=dom){var d=new Date(today.getFullYear(),today.getMonth(),pcal.weekly[i]);var dns=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];return dns[d.getDay()]+' '+pcal.weekly[i]+' '+MONTH_NAMES[mo-1]}}
+  var nextMo=mo+1;if(nextMo>12)return null;
+  var nextPcal=PCAL_2026[nextMo];if(!nextPcal||!nextPcal.weekly.length)return null;
+  var d=new Date(today.getFullYear(),nextMo-1,nextPcal.weekly[0]);var dns=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return dns[d.getDay()]+' '+nextPcal.weekly[0]+' '+MONTH_NAMES[nextMo-1];
 }
 
 function renderPcal(){
