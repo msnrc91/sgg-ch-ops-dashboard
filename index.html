@@ -483,8 +483,10 @@ function resetDay(){var fk=fbDateKey(dateKey(sel));fbCache.done[fk]={};fbSet('do
 // ASSIGNMENTS (Firebase-backed)
 // ═══════════════════════════════════════════════════════════════
 function getAssignment(taskId,d){var dk=fbDateKey(dateKey(d||sel));var da=fbCache.assignments[dk];return da&&da[taskId]||''}
-function setAssignment(taskId,person){
-  var dk=fbDateKey(dateKey(sel));
+function setAssignment(taskId,person){setAssignmentFor(taskId,person,null)}
+function setAssignmentFor(taskId,person,dateMs){
+  var d=dateMs?new Date(dateMs):sel;
+  var dk=fbDateKey(dateKey(d));
   if(!fbCache.assignments[dk])fbCache.assignments[dk]={};
   if(person){fbCache.assignments[dk][taskId]=person;fbSet('assignments/'+dk+'/'+taskId,person)}
   else{delete fbCache.assignments[dk][taskId];fbDel('assignments/'+dk+'/'+taskId)}
@@ -622,11 +624,12 @@ function tkHTML(t,showPrep,dueInfo,showCheck,pk,overdueInfo){
     h+='<div class="done-by">\u2714 '+di.by+timeStr2+'</div>';
   }
 
-  // Assignment dropdown
-  if(showCheck){
-    var assignDate=overdueInfo?overdueInfo.originalDate:null;
+  // Assignment dropdown (today + future horizon tasks)
+  if(showCheck||dueInfo){
+    var assignDate=overdueInfo?overdueInfo.originalDate:(dueInfo?dueInfo.dueDate:null);
     var assigned=getAssignment(t.id,assignDate);
-    h+='<div class="assign-row"><select class="assign-sel" onchange="setAssignment(\''+t.id+'\',this.value)" onclick="event.stopPropagation()">';
+    var assignDateMs=assignDate?assignDate.getTime():'null';
+    h+='<div class="assign-row"><select class="assign-sel" onchange="setAssignmentFor(\''+t.id+'\',this.value,'+assignDateMs+')" onclick="event.stopPropagation()">';
     h+='<option value="">'+(lang==='fr'?'Non assign\u00e9':'Unassigned')+'</option>';
     for(var ti=0;ti<fbCache.team.length;ti++){
       var mem=fbCache.team[ti];var short=mem.split(' ')[0];
