@@ -624,7 +624,8 @@ function tkHTML(t,showPrep,dueInfo,showCheck,pk,overdueInfo){
 
   // Assignment dropdown
   if(showCheck){
-    var assigned=getAssignment(t.id);
+    var assignDate=overdueInfo?overdueInfo.originalDate:null;
+    var assigned=getAssignment(t.id,assignDate);
     h+='<div class="assign-row"><select class="assign-sel" onchange="setAssignment(\''+t.id+'\',this.value)" onclick="event.stopPropagation()">';
     h+='<option value="">'+(lang==='fr'?'Non assign\u00e9':'Unassigned')+'</option>';
     for(var ti=0;ti<fbCache.team.length;ti++){
