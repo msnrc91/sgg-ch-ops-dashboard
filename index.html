@@ -908,6 +908,7 @@ function renderWorkload(){
   h+='<button class="'+(wlView==='week'?'active':'')+'" onclick="setWlView(\'week\')">'+(lang==='fr'?'Semaine':'Week')+'</button>';
   h+='<button class="'+(wlView==='month'?'active':'')+'" onclick="setWlView(\'month\')">'+(lang==='fr'?'Mois':'Month')+'</button>';
   h+='</div>';
+  h+='<div style="font-size:11px;color:#888;margin:4px 0 6px;display:flex;gap:14px"><span><span class="wl-pend">\u25cf</span> '+(lang==='fr'?'en attente':'pending')+'</span><span><span class="wl-done-num">\u25cf</span> '+(lang==='fr'?'termin\u00e9':'done')+'</span><span style="color:#ccc">\u00b7 = '+(lang==='fr'?'aucune t\u00e2che':'no tasks')+'</span></div>';
   
   // Render table
   h+='<div style="overflow-x:auto"><table class="wl-table"><thead><tr><th></th>';
