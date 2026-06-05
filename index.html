@@ -571,7 +571,7 @@ function overdueForDate(d,lookBackDays){
     var pastDate=new Date(d.getTime()-i*864e5);var pastTasks=tasksForDate(pastDate);
     for(var j=0;j<pastTasks.length;j++){
       var t=pastTasks[j];
-      if(t.freq==="payroll-cal-prep"||t.freq==="weekly"||t.freq==="daily"||t.freq==="bimonthly")continue;
+      if(t.freq==="payroll-cal-prep"||t.freq==="daily"||t.freq==="bimonthly")continue;
       if(isDone(t.id,dateKey(pastDate)))continue;
       if(seenIds[t.id])continue;seenIds[t.id]=true;
       r.push({t:t,originalDate:pastDate,daysOverdue:i});
@@ -1055,7 +1055,7 @@ function TR(t,field){
 // ═══════════════════════════════════════════════════════════════
 function render(){
   document.getElementById('dateLabel').textContent=fmtFull(sel);
-  var today=tasksForDate(sel);var overdue=overdueForDate(sel,21);
+  var today=tasksForDate(sel);var overdue=overdueForDate(sel,7);
   var upcoming7=upcomingInWindow(sel,1,7);
   var seen7={};var unique7Count=0;for(var i=0;i<upcoming7.length;i++){if(!seen7[upcoming7[i].t.id]){seen7[upcoming7[i].t.id]=true;unique7Count++}}
   var hardC=0;for(var i=0;i<today.length;i++)if(today[i].hard)hardC++;
