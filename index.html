@@ -482,10 +482,12 @@ function resetDay(){var fk=fbDateKey(dateKey(sel));fbCache.done[fk]={};fbSet('do
 // ═══════════════════════════════════════════════════════════════
 // ASSIGNMENTS (Firebase-backed)
 // ═══════════════════════════════════════════════════════════════
-function getAssignment(taskId){return fbCache.assignments[taskId]||''}
+function getAssignment(taskId,d){var dk=fbDateKey(dateKey(d||sel));var da=fbCache.assignments[dk];return da&&da[taskId]||''}
 function setAssignment(taskId,person){
-  if(person){fbCache.assignments[taskId]=person;fbSet('assignments/'+taskId,person)}
-  else{delete fbCache.assignments[taskId];fbDel('assignments/'+taskId)}
+  var dk=fbDateKey(dateKey(sel));
+  if(!fbCache.assignments[dk])fbCache.assignments[dk]={};
+  if(person){fbCache.assignments[dk][taskId]=person;fbSet('assignments/'+dk+'/'+taskId,person)}
+  else{delete fbCache.assignments[dk][taskId];fbDel('assignments/'+dk+'/'+taskId)}
   render();
 }
 
@@ -886,7 +888,7 @@ function renderWorkload(){
     for(var ti=0;ti<team.length;ti++)data[team[ti]].days[dk]={count:0,hard:0,done:0};
     for(var j=0;j<ts.length;j++){
       var t=ts[j];
-      var assigned=getAssignment(t.id);
+      var assigned=getAssignment(t.id,dd);
       var bucket=assigned||team[team.length-1]; // unassigned
       if(!data[bucket])continue;
       if(!data[bucket].days[dk])data[bucket].days[dk]={count:0,hard:0,done:0};
