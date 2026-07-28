@@ -221,9 +221,6 @@ h1{font-size:18px;font-weight:600;margin-bottom:12px}
 <div class="sec" id="monthlyHdr">Monthly deadlines <button class="collapse-btn" id="monthlyBtn" onclick="toggle('monthly')">[hide]</button></div>
 <div id="monthlySec"></div>
 
-<div class="sec" id="quarterlyHdr">Quarterly tasks <button class="collapse-btn" id="quarterlyBtn" onclick="toggle('quarterly')">[hide]</button></div>
-<div id="quarterlySec"></div>
-
 <div class="sec" id="annualHdr">Annual deadlines <button class="collapse-btn" id="annualBtn" onclick="toggle('annual')">[hide]</button></div>
 <div id="annualSec"></div>
 
@@ -332,13 +329,13 @@ var TASKS=[
 {id:"b2",task:"Groupe Mutuel sickness claims follow-up",when:"2x / month",day:0,layer:"lifecycle",hard:0,system:"Groupe Mutuel platform + GM sickness allowances tracker (Excel)",freq:"bimonthly",note:"SOP D: monitor claims, check decisions/requests, update tracker, verify allowance in payslips."},
 {id:"b3",task:"Consimo family allowances claims follow-up",when:"2x / month",day:0,layer:"lifecycle",hard:0,system:"Consimo portal + Family allowance tracker (Excel)",freq:"bimonthly",note:"SOP B: check new decisions, update tracker, inform Enovetic, reconcile monthly payments."},
 // ═══ MONTHLY — PAYROLL CHAIN (list-only, real dates via payroll calendar) ═══
-{id:"m1",task:"Monthly timesheet collection",when:"1st BD of M+1",day:0,layer:"payroll",hard:1,prep:"Last week of month: remind clients monthly timesheets due on 1st BD",system:"Easymission + Email",freq:"monthly-list",md:1},
-{id:"m2",task:"Client approval monthly timesheets",when:"2nd BD of M+1",day:0,layer:"payroll",hard:1,system:"Email",freq:"monthly-list",md:2},
-{id:"m3",task:"Submit monthly payroll to Enovetic",when:"Per payroll calendar, 12:00",day:0,layer:"payroll",hard:1,prep:"Ensure all monthly approvals received before closure date",system:"Easytemp + Easymission",freq:"monthly-list",md:3},
-{id:"m4",task:"Monthly salary payment",when:"Next WD after closure",day:0,layer:"payroll",hard:0,system:"Bank",freq:"monthly-list",md:5},
-{id:"m7",task:"Monthly client invoices (check + approve)",when:"Monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly-list",md:3},
-{id:"m8",task:"Payroll reports to Finance",when:"On monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly-list",md:5},
-{id:"m10",task:"Month-end close",when:"By 5th of M+1",day:0,layer:"invoicing",hard:1,system:"Easytemp",freq:"monthly-list",md:5},
+{id:"m1",task:"Monthly timesheet collection",when:"1st BD of M+1",day:0,layer:"payroll",hard:1,prep:"Last week of month: remind clients monthly timesheets due on 1st BD",system:"Easymission + Email",freq:"monthly",md:1},
+{id:"m2",task:"Client approval monthly timesheets",when:"2nd BD of M+1",day:0,layer:"payroll",hard:1,system:"Email",freq:"monthly",md:2},
+{id:"m3",task:"Submit monthly payroll to Enovetic",when:"Per payroll calendar, 12:00",day:0,layer:"payroll",hard:1,prep:"Ensure all monthly approvals received before closure date",system:"Easytemp + Easymission",freq:"monthly",md:3},
+{id:"m4",task:"Monthly salary payment",when:"Next WD after closure",day:0,layer:"payroll",hard:0,system:"Bank",freq:"monthly",md:5},
+{id:"m7",task:"Monthly client invoices (check + approve)",when:"Monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly",md:3},
+{id:"m8",task:"Payroll reports to Finance",when:"On monthly closure date",day:0,layer:"invoicing",hard:0,system:"Easytemp",freq:"monthly",md:5},
+{id:"m10",task:"Month-end close",when:"By 5th of M+1",day:0,layer:"invoicing",hard:1,system:"Easytemp",freq:"monthly",md:5},
 // ═══ MONTHLY — FIRING ON ACTUAL DATES ═══
 {id:"m11",task:"Contract expiry review + closure",when:"Around 20th",day:0,layer:"lifecycle",hard:0,system:"Easytemp",freq:"bimonthly",prep:"Mid-month: pull list of contracts expiring next 2 weeks"},
 {id:"m12",task:"Worker document audit (Joiners checklist)",when:"Around 15th",day:0,layer:"lifecycle",hard:0,system:"JOINERS checklist (Excel)",freq:"monthly",md:15,note:"Proactive check of employee records for clean payroll. Review for missing IBAN (no salary), missing AVS number (no pension fund), or missing tax configuration (tax corrections). Chase the data before payroll runs.",prep:"Pull the Joiners checklist and flag any incomplete records. Contact workers/recruiters to fill gaps."},
@@ -347,11 +344,12 @@ var TASKS=[
 {id:"m16",task:"Complete cantonal tax invoice templates + send to Accounting",when:"By 25th",day:0,layer:"legal",hard:1,system:"PDF editor + SG CH Taxes reconciliation file (Excel)",freq:"monthly",md:25,note:"SOP E: fill invoice amount from reconciliation. Check correct DPI number (SL vs Deel). Send to Tatiana for payment by 31st.",prep:"By 20th: reconciliation file must be complete."},
 {id:"m18",task:"Send monthly timesheet reminders to clients + workers",when:"27th",day:0,layer:"payroll",hard:0,system:"Email",freq:"monthly",md:27,note:"SOP E: remind monthly-paid clients and weekly-paid clients about monthly closure.",scope:"NTT Data, Ben's Bus, Marvelous Digital, EPFL"},
 {id:"m19",task:"Download family allowance statement from Consimo",when:"28th",day:0,layer:"lifecycle",hard:0,system:"Consimo portal + Family allowance tracker (Excel)",freq:"monthly",md:28,note:"SOP E: download PDF + Excel. Highlight SL employees in blue. Send to Enovetic."},
-{id:"m20",task:"Monthly payroll reports \u2014 download, convert, upload for Accounting",when:"1 day after closure",day:0,layer:"invoicing",hard:0,system:"Easytemp + OneDrive",freq:"monthly-list",md:6,note:"SOP E: 6 reports from Enovetic. Convert .txt to .xlsx. Upload for Tatiana Gulica. Deadline: by 5th."},
-{id:"m21",task:"Generate + send AGI certificates to eligible employees",when:"1 day after closure",day:0,layer:"lifecycle",hard:0,system:"Easytemp + PDF editor",freq:"monthly-list",md:6,note:"SOP E/F: download pre-filled AGI, edit, sign, apply scan effect, send with payslips."},
+{id:"m20",task:"Monthly payroll reports \u2014 download, convert, upload for Accounting",when:"1 day after closure",day:0,layer:"invoicing",hard:0,system:"Easytemp + OneDrive",freq:"monthly",md:6,note:"SOP E: 6 reports from Enovetic. Convert .txt to .xlsx. Upload for Tatiana Gulica. Deadline: by 5th."},
+{id:"m21",task:"Generate + send AGI certificates to eligible employees",when:"1 day after closure",day:0,layer:"lifecycle",hard:0,system:"Easytemp + PDF editor",freq:"monthly",md:6,note:"SOP E/F: download pre-filled AGI, edit, sign, apply scan effect, send with payslips. Only generate for employees on the confirmed opt-in list. Check that AGI opt-in cleanup (m28) is done first."},
+{id:"m28",task:"AGI opt-in confirmation email \u2014 clean up active list",when:"6th of month",day:0,layer:"lifecycle",hard:0,system:"Email + Easytemp",freq:"monthly",md:6,note:"Send opt-in email to all employees currently on the AGI (Attestation de Gains Interm\u00e9diaires) list. Only employees who respond confirming their need will continue receiving the certificate automatically in the next payroll cycle. Archive non-respondents from the list. This keeps the list clean and reduces unnecessary processing \u2014 reduced from 256 to ~27 active recipients. Must be completed before AGI certificate generation (m21). File/template: refer to V\u00e2nia\u2019s standard opt-in email template."},
 {id:"m23",task:"NTT Data monthly contract expiry check + client notification",when:"Around 22nd",day:0,layer:"lifecycle",hard:0,system:"NTT Data Contracts Management (Excel) + Staff-Leasing payroll input file (Excel)",freq:"monthly",md:22,note:"SOP C: evaluate end dates, notify client, collect extension decisions.",scope:"NTT Data"},
 {id:"m24",task:"NTT Data discount reconciliation (offset tracker)",when:"Around 22nd",day:0,layer:"invoicing",hard:0,system:"NTT Data Tracker offset amount (Excel)",freq:"monthly",md:22,note:"SOP E: add new joiner data + monthly days. Check total offset vs remaining.",scope:"NTT Data"},
-{id:"m25",task:"KPIs worker statistics for upper management",when:"Penultimate business day of month",day:0,layer:"governance",hard:0,system:"Easytemp + Excel + Email",freq:"monthly",md:27,note:"Send to Matilde. At this moment the month has not ended yet, nevertheless we can for sure foresee if there is any work scheduled in the pipeline for the days remaining until month end. Therefore, a rough estimation of those remaining days until month end + the actuals of the current month already worked, will for sure be enough. File in OneDrive/Operations/Switzerland/Clients/a_EasyTemp System/10.KPIs worker statistics. Download report from EasyTemp. || List 1: Employee profile \u2192 Reporting \u2192 Relev\u00e9 heures CT \u2192 adjust weeks to match the month. Use column V to find the number of hours worked. || List 2: Mission profile \u2192 Print \u2192 Infos d\u00e9taill\u00e9es mission \u2192 select the branch and all services \u2192 adjust dates to first and last day of the month. Use column C to identify the number of active contracts / number of active workers. || List 3: Employee profile \u2192 Reporting \u2192 Adresses CT \u2192 to know how many people are in our active database \u2192 adjust employee status to Active and On Mission."},
+{id:"m25",task:"KPIs worker statistics for upper management",when:"6th of month (postpone if time off)",day:0,layer:"governance",hard:0,system:"Easytemp + Excel + Email",freq:"monthly",md:6,shiftFwd:true,note:"Send to Matilde. At this moment the month has not ended yet, nevertheless we can for sure foresee if there is any work scheduled in the pipeline for the days remaining until month end. Therefore, a rough estimation of those remaining days until month end + the actuals of the current month already worked, will for sure be enough. File in OneDrive/Operations/Switzerland/Clients/a_EasyTemp System/10.KPIs worker statistics. Download report from EasyTemp. || List 1: Employee profile \u2192 Reporting \u2192 Relev\u00e9 heures CT \u2192 adjust weeks to match the month. Use column V to find the number of hours worked. || List 2: Mission profile \u2192 Print \u2192 Infos d\u00e9taill\u00e9es mission \u2192 select the branch and all services \u2192 adjust dates to first and last day of the month. Use column C to identify the number of active contracts / number of active workers. || List 3: Employee profile \u2192 Reporting \u2192 Adresses CT \u2192 to know how many people are in our active database \u2192 adjust employee status to Active and On Mission."},
 {id:"m26",task:"Complete payroll input file \u2014 clients managed by V\u00e2nia",when:"By 25th",day:0,layer:"payroll",hard:0,system:"Staff-Leasing payroll input file (Excel)",freq:"monthly",md:25,note:"Ensure payroll input file is fully updated for all clients managed by V\u00e2nia. Enables backup coverage during absence and accurate monthly payroll processing."},
 {id:"m27",task:"Complete payroll input file \u2014 clients managed by Svetlana",when:"By 25th",day:0,layer:"payroll",hard:0,system:"Staff-Leasing payroll input file (Excel)",freq:"monthly",md:25,note:"Ensure payroll input file is fully updated for all clients managed by Svetlana. Enables backup coverage during absence and accurate monthly payroll processing."},
 // ═══ QUARTERLY ═══ (none currently — use + button to add)
@@ -496,11 +494,10 @@ function setAssignmentFor(taskId,person,dateMs){
 // ═══════════════════════════════════════════════════════════════
 var sel=new Date();
 (function(){var w=sel.getDay();if(w===6)sel=new Date(sel.getTime()+2*864e5);if(w===0)sel=new Date(sel.getTime()+1*864e5)})();
-var collapsed={monthly:true,quarterly:true,annual:true};
+var collapsed={monthly:true,annual:true};
 
 function dateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function monthKey(d){return d.getFullYear()+'-M'+(d.getMonth()+1)}
-function quarterKey(d){return d.getFullYear()+'-Q'+Math.ceil((d.getMonth()+1)/3)}
 function yearKey(d){return d.getFullYear()+'-Y'}
 
 function go(n){sel=new Date(sel.getTime()+n*864e5);var w=sel.getDay();if(n>0&&w===6)sel=new Date(sel.getTime()+2*864e5);if(n>0&&w===0)sel=new Date(sel.getTime()+1*864e5);if(n<0&&w===0)sel=new Date(sel.getTime()-2*864e5);if(n<0&&w===6)sel=new Date(sel.getTime()-1*864e5);render()}
@@ -523,7 +520,8 @@ function tasksForDate(d){
     if(t.freq==="bimonthly"){var biDates=t.bd||[10,25];for(var bi=0;bi<biDates.length;bi++){var biOrig=new Date(d.getFullYear(),d.getMonth(),biDates[bi]);var biShift=isWeekend(biOrig)?shiftToFriday(biOrig):biOrig;if(sameDay(biShift,d)){r.push(t);break}}}
     if(t.freq==="quarterly"&&[3,6,9,12].indexOf(mo)>=0){var qOrig=new Date(d.getFullYear(),d.getMonth(),25);var qShift=isWeekend(qOrig)?shiftToFriday(qOrig):qOrig;if(sameDay(qShift,d))r.push(t)}
     if(t.freq==="annual"&&t.am&&t.ad){var aOrig=new Date(d.getFullYear(),t.am-1,t.ad);var aShift=isWeekend(aOrig)?shiftToFriday(aOrig):aOrig;if(sameDay(aShift,d))r.push(t)}
-    if(t.freq==="monthly"&&t.md){var origDate=new Date(d.getFullYear(),d.getMonth(),t.md);var shifted=isWeekend(origDate)?shiftToFriday(origDate):origDate;if(sameDay(shifted,d))r.push(t)}
+    if(t.freq==="monthly"&&t.firstDow!==undefined){var fd=t.firstDow;for(var dd2=1;dd2<=7;dd2++){var candidate=new Date(d.getFullYear(),d.getMonth(),dd2);if(candidate.getDay()===fd){if(sameDay(candidate,d))r.push(t);break}}}
+    if(t.freq==="monthly"&&t.md){var origDate=new Date(d.getFullYear(),d.getMonth(),t.md);var shifted;if(t.shiftFwd){shifted=origDate;var sw=shifted.getDay();if(sw===6)shifted=new Date(shifted.getTime()+2*864e5);if(sw===0)shifted=new Date(shifted.getTime()+1*864e5)}else{shifted=isWeekend(origDate)?shiftToFriday(origDate):origDate}if(sameDay(shifted,d))r.push(t)}
   }
   // Monthly tax reconciliation reminder on first ePost day
   if(wd===2||wd===5){
@@ -790,7 +788,8 @@ m16:{t:"Compl\u00e9ter mod\u00e8les de factures fiscales cantonales \u2192 Compt
 m18:{t:"Envoyer rappels feuilles d'heures mensuelles aux clients",n:"SOP E : rappeler clients paie mensuelle et clients paie hebdo pour cl\u00f4ture mensuelle.",s:"NTT Data, Ben's Bus, Marvelous Digital, EPFL"},
 m19:{t:"T\u00e9l\u00e9charger relev\u00e9 allocations familiales depuis Consimo",n:"SOP E : t\u00e9l\u00e9charger PDF + Excel. Surligner employ\u00e9s SL en bleu. Envoyer \u00e0 Enovetic."},
 m20:{t:"Rapports paie mensuels \u2014 t\u00e9l\u00e9charger, convertir, envoyer \u00e0 Comptabilit\u00e9",n:"6 rapports Enovetic. Convertir .txt en .xlsx. Partager avec Tatiana."},
-m21:{t:"G\u00e9n\u00e9rer + envoyer certificats AGI aux employ\u00e9s \u00e9ligibles",n:"Pour employ\u00e9s avec option Gains interm\u00e9diaires activ\u00e9e."},
+m21:{t:"G\u00e9n\u00e9rer + envoyer certificats AGI aux employ\u00e9s \u00e9ligibles",n:"Pour employ\u00e9s avec option Gains interm\u00e9diaires activ\u00e9e. G\u00e9n\u00e9rer uniquement pour les employ\u00e9s sur la liste opt-in confirm\u00e9e. V\u00e9rifier que le nettoyage AGI (m28) est fait en premier."},
+m28:{t:"Email de confirmation AGI opt-in \u2014 nettoyage de la liste active",n:"Envoyer un email opt-in \u00e0 tous les employ\u00e9s actuellement sur la liste AGI (Attestation de Gains Interm\u00e9diaires). Seuls les employ\u00e9s qui r\u00e9pondent en confirmant leur besoin continueront \u00e0 recevoir le certificat automatiquement. Archiver les non-r\u00e9pondants. Cela maintient la liste propre et r\u00e9duit le travail inutile \u2014 r\u00e9duit de 256 \u00e0 ~27 destinataires actifs. Doit \u00eatre fait avant la g\u00e9n\u00e9ration des certificats AGI (m21). Mod\u00e8le : voir le mod\u00e8le d\u2019email standard de V\u00e2nia."},
 m23:{t:"V\u00e9rification mensuelle contrats NTT Data + notification client"},
 m24:{t:"Rapprochement rabais NTT Data (suivi offset)"},
 m25:{t:"KPIs statistiques travailleurs pour la direction",n:"Envoyer \u00e0 Matilde. Le mois n\u2019est pas encore termin\u00e9, mais nous pouvons pr\u00e9voir s\u2019il y a du travail planifi\u00e9 pour les jours restants. Une estimation approximative des jours restants + les r\u00e9alis\u00e9s du mois en cours sera suffisante. Fichier dans OneDrive/Operations/Switzerland/Clients/a_EasyTemp System/10.KPIs worker statistics. T\u00e9l\u00e9charger le rapport depuis EasyTemp. || Liste 1 : profil collaborateur \u2192 Reporting \u2192 Relev\u00e9 heures CT \u2192 ajuster les semaines correspondant au mois. Utiliser la colonne V pour conna\u00eetre le nombre d\u2019heures effectu\u00e9es. || Liste 2 : profil Mission \u2192 Imprimer \u2192 Infos d\u00e9taill\u00e9es mission \u2192 s\u00e9lectionner la succursale et tous les services \u2192 ajuster les dates au premier et dernier jour du mois. Utiliser la colonne C pour identifier le nombre de contrats actifs / nombre de collaborateurs actifs. || Liste 3 : profil collaborateur \u2192 Reporting \u2192 Adresses CT \u2192 pour savoir combien de personnes sont dans notre base de donn\u00e9es active \u2192 ajuster le statut collaborateur \u00e0 Actif et En mission."},
@@ -816,7 +815,7 @@ en:{title:'Switzerland \u2014 daily ops dashboard',
 overdue:'\u26A0 Overdue \u2014 not marked done',today:'Today',tasks:'task',tasks_p:'tasks',deadline:'deadline',deadlines:'deadlines',
 next7:'Next 7 days',next30:'Next 30 days',next90:'Next 90 days',thisWeek:'This week',workloadH:'Workload overview',
 payrollCal:'Payroll calendar',payrollCalSub:'From Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative',
-monthlyH:'Monthly deadlines',quarterlyH:'Quarterly tasks',annualH:'Annual deadlines',
+monthlyH:'Monthly deadlines',annualH:'Annual deadlines',
 overdueStat:'Overdue',todayStat:'Today',hardStat:'Hard deadlines',next7Stat:'Next 7 days',
 dueToday:'Due today',dueTomorrow:'Due tomorrow',dueIn:' days)',ago:' ago)',wasdue:'Overdue \u00b7 was due ',notdone:' \u00b7 not marked done',
 tool:'Tool:',prepOn:'Prepare on ',weekend:'Weekend \u2014 no scheduled tasks. Use arrows to navigate.',
@@ -834,7 +833,7 @@ fr:{title:'Suisse \u2014 tableau de bord op\u00e9rationnel',
 overdue:'\u26A0 En retard \u2014 non coch\u00e9',today:"Aujourd'hui",tasks:'t\u00e2che',tasks_p:'t\u00e2ches',deadline:'\u00e9ch\u00e9ance',deadlines:'\u00e9ch\u00e9ances',
 next7:'7 prochains jours',next30:'30 prochains jours',next90:'90 prochains jours',thisWeek:'Cette semaine',workloadH:'Aper\u00e7u charge de travail',
 payrollCal:'Calendrier paie',payrollCalSub:"Depuis Enovetic EasyTemp \u2192 Switzerland clients \u2192 Innovative",
-monthlyH:'\u00c9ch\u00e9ances mensuelles',quarterlyH:'T\u00e2ches trimestrielles',annualH:'\u00c9ch\u00e9ances annuelles',
+monthlyH:'\u00c9ch\u00e9ances mensuelles',annualH:'\u00c9ch\u00e9ances annuelles',
 overdueStat:'En retard',todayStat:"Aujourd'hui",hardStat:'Obligatoires',next7Stat:'7 prochains j.',
 dueToday:"\u00c9ch\u00e9ance aujourd'hui",dueTomorrow:'\u00c9ch\u00e9ance demain',dueIn:' jours)',ago:' j. de retard)',wasdue:'En retard \u00b7 \u00e9ch\u00e9ance ',notdone:' \u00b7 non coch\u00e9',
 tool:'Outil :',prepOn:'Pr\u00e9parer le ',weekend:'Week-end \u2014 aucune t\u00e2che. Utilisez les fl\u00e8ches pour naviguer.',
@@ -1120,16 +1119,13 @@ function render(){
 
   // Reference sections
   var mTasks=TASKS.filter(function(t){return t.freq==="monthly"||t.freq==="monthly-list"||t.freq==="bimonthly"}).sort(function(a,b){return(a.md||0)-(b.md||0)});
-  var qTasks=TASKS.filter(function(t){return t.freq==="quarterly"});
   var aTasks=TASKS.filter(function(t){return t.freq==="annual"}).sort(function(a,b){return((a.am||0)*100+(a.ad||0))-((b.am||0)*100+(b.ad||0))});
-  var mk=monthKey(sel);var qk=quarterKey(sel);var yk=yearKey(sel);
+  var mk=monthKey(sel);var yk=yearKey(sel);
 
   document.getElementById('monthlyHdr').innerHTML=L('monthlyH')+' <button class="collapse-btn" onclick="toggle(\'monthly\')">'+L(collapsed.monthly?'show':'hide')+'</button>';
-  document.getElementById('quarterlyHdr').innerHTML=L('quarterlyH')+' <button class="collapse-btn" onclick="toggle(\'quarterly\')">'+L(collapsed.quarterly?'show':'hide')+'</button>';
   document.getElementById('annualHdr').innerHTML=L('annualH')+' <button class="collapse-btn" onclick="toggle(\'annual\')">'+L(collapsed.annual?'show':'hide')+'</button>';
 
   if(!collapsed.monthly){var mDone=0;for(var i=0;i<mTasks.length;i++)if(isDone(mTasks[i].id,mk))mDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+mDone+' / '+mTasks.length+'</span></div>';for(var i=0;i<mTasks.length;i++)h+=tkHTML(mTasks[i],false,null,true,mk);document.getElementById('monthlySec').innerHTML=h} else document.getElementById('monthlySec').innerHTML='';
-  if(!collapsed.quarterly){var qDone=0;for(var i=0;i<qTasks.length;i++)if(isDone(qTasks[i].id,qk))qDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+qDone+' / '+qTasks.length+'</span></div>';for(var i=0;i<qTasks.length;i++)h+=tkHTML(qTasks[i],false,null,true,qk);document.getElementById('quarterlySec').innerHTML=h} else document.getElementById('quarterlySec').innerHTML='';
   if(!collapsed.annual){var aDone=0;for(var i=0;i<aTasks.length;i++)if(isDone(aTasks[i].id,yk))aDone++;var h='<div class="progress-label" style="margin-top:6px"><span>'+aDone+' / '+aTasks.length+'</span></div>';for(var i=0;i<aTasks.length;i++)h+=tkHTML(aTasks[i],true,null,true,yk);document.getElementById('annualSec').innerHTML=h} else document.getElementById('annualSec').innerHTML='';
 }
 
